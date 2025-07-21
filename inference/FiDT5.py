@@ -35,26 +35,17 @@ class PointNetwork(nn.Module):
 
 class FiDT5(transformers.T5ForConditionalGeneration):
     # 이 부분 Parameter는 Train Code에 따라 달라질 예정.
-    def __init__(self, config, pooling_type=None, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5, tokenizer=None):
+    def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5, tokenizer=None):
         super().__init__(config)
         ### jeongwoo
         self.topk_attn_indices = []
-        self.pooling_type = pooling_type
         self.n_passages = n_passages
         self.tokenizer = tokenizer
         self.pad_token_id = self.tokenizer.pad_token_id
         self.softmax_temp = softmax_temp
         self.local_weight = local_weight
         self.n_special_tokens = n_special_tokens
-        self.wrap_encoder(pooling_type=pooling_type, n_special_tokens=self.n_special_tokens)
-
-        if 'weighted' in pooling_type:
-            # MAKE self.d_model * self.n_special_tokens -> self.n_special_tokens Gating MLP
-            self.gating_mlp = nn.Linear(self.n_special_tokens, 1)
-        else:
-            self.gating_mlp = None
-        
-        
+        self.wrap_encoder(n_special_tokens=self.n_special_tokens)        
         
         
     def forward_(self, **kwargs):
@@ -251,11 +242,11 @@ class FiDT5(transformers.T5ForConditionalGeneration):
 
         return topk_indices
     
-    def wrap_encoder(self, pooling_type, use_checkpoint=False, n_special_tokens=0):
+    def wrap_encoder(self, use_checkpoint=False, n_special_tokens=0):
         """
         Wrap T5 encoder to obtain a Fusion-in-Decoder model.
         """
-        self.encoder = EncoderWrapper(self.encoder, pooling_type=pooling_type, use_checkpoint=use_checkpoint, n_special_tokens=n_special_tokens)
+        self.encoder = EncoderWrapper(self.encoder, use_checkpoint=use_checkpoint, n_special_tokens=n_special_tokens)
 
     def unwrap_encoder(self):
         """
@@ -271,7 +262,7 @@ class FiDT5(transformers.T5ForConditionalGeneration):
     def load_t5(self, state_dict):
         self.unwrap_encoder()
         self.load_state_dict(state_dict, strict=False)
-        self.wrap_encoder(self.pooling_type, n_special_tokens=self.n_special_tokens)
+        self.wrap_encoder(n_special_tokens=self.n_special_tokens)
             
     def set_checkpoint(self, use_checkpoint):
         """
@@ -327,11 +318,10 @@ class EncoderWrapper(torch.nn.Module):
     """
     Encoder Wrapper for T5 Wrapper to obtain a Fusion-in-Decoder model.
     """
-    def __init__(self, encoder, pooling_type=None, use_checkpoint=False, n_special_tokens=0):
+    def __init__(self, encoder, use_checkpoint=False, n_special_tokens=0):
         super().__init__()
         self.main_input_name = encoder.main_input_name
         self.encoder = encoder
-        self.pooling_type = pooling_type
         self.n_special_tokens = n_special_tokens
         apply_checkpoint_wrapper(self.encoder, use_checkpoint)
 
@@ -343,7 +333,6 @@ class EncoderWrapper(torch.nn.Module):
         self.encoder.set_input_embeddings(new_embeddings)
         
     def forward(self, input_ids=None, attention_mask=None, **kwargs):
-
         bsz, total_length = input_ids.shape
         passage_length = total_length // self.n_passages
         input_ids = input_ids.view(bsz*self.n_passages, passage_length)
