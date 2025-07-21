@@ -1,0 +1,12 @@
+wandb/
+**/__pycache__/
+rankt5/
+models/backup/
+models/dontchange/
+get_data.ipynb
+models/__pycache__/
+utiils/__pycache__/
+rankt5/
+test.*
+test_jw_resume.sh
+train_*.sh

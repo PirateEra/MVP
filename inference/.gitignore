@@ -1,0 +1,6 @@
+__pycache__/
+deprecated/
+eval_data/
+instructions/
+outputs/
+*.txt
