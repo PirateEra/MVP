@@ -19,6 +19,7 @@ def read_jsonl(path):
     with jsonlines.open(path, 'r') as reader:
         for instance in reader:
             data.append(instance)
+            
     return data
 
 class ListT5Evaluator():
@@ -58,7 +59,8 @@ class ListT5Evaluator():
         model.eval()
         if self.args.measure_flops:
             self.prof = FlopsProfiler(model)
-            self.prof.start_profile()        
+            self.prof.start_profile()     
+               
         return model
 
     def make_input_tensors(self, texts):
@@ -70,6 +72,7 @@ class ListT5Evaluator():
             truncation=True).to('cuda')
         input_tensors = {'input_ids': raw['input_ids'].unsqueeze(0),
                 'attention_mask': raw['attention_mask'].unsqueeze(0)}
+        
         return input_tensors
 
     def make_listwise_text(self, question, ctxs, sep='|'):
@@ -81,6 +84,7 @@ class ListT5Evaluator():
             else:
                 text = f"<extra_id_0> | Query: {question} | Context: {ctxs[i]}"            
             out.append(text)
+            
         return out
 
     def run_inference(self, input_tensors):
@@ -123,14 +127,8 @@ class ListT5Evaluator():
 
     def direct_rerank(self, question, ctxs, k=-1):
         full_input_texts = self.make_listwise_text(question, ctxs)
-        try:
-            input_tensors = self.make_input_tensors(full_input_texts)
-        except:
-            import IPython;
-            IPython.embed()
-            exit()
+        input_tensors = self.make_input_tensors(full_input_texts)
         output = self.run_inference(input_tensors)
-
         out_k_rel_index = [str(x+1) for x in output[0]]
 
         return out_k_rel_index
@@ -248,7 +246,7 @@ def main():
     parser.add_argument('--padding', default='max_length', type=str)
     parser.add_argument('--n_special_tokens', default=1, type=int)
 
-    # Position bias setup
+    # position bias setup
     parser.add_argument('--initial', default='origin', type=str)
     parser.add_argument('--seed', default=0, type=int)
     
