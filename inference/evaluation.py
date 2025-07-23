@@ -1,17 +1,7 @@
-import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-os.environ['OMP_NUM_THREADS'] = '1'
-
 import argparse
 from tqdm import tqdm
-import pandas as pd
-import pickle
 import jsonlines
-import json
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-import torch
-import numpy as np
-import sys
+from transformers import T5Tokenizer
 from pathlib import Path
 from FiDT5 import FiDT5
 import random
@@ -20,21 +10,9 @@ from beir_length_mapping import BEIR_LENGTH_MAPPING
 import time
 from deepspeed.profiling.flops_profiler import FlopsProfiler
 
-sys.setrecursionlimit(10000)
-
-import warnings
-warnings.filterwarnings("ignore")
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-def read_pickle(path):
-    with open(path, 'rb') as f:
-        data = pickle.load(f)
-    return data
-
-def read_json(path):
-    with open(path, 'r') as f:
-        data = json.load(f)
-    return data
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
 
 def read_jsonl(path):
     data = []
@@ -45,23 +23,14 @@ def read_jsonl(path):
 
 class ListT5Evaluator():
     def __init__(self, args):
-        self.idx = 0
-        self.imsi = []
         self.args = args
         self.tok = T5Tokenizer.from_pretrained(self.args.model_path)
 
-        # For Evaluate all datasets (Using Folder as input_path)
         if not os.path.isdir(self.args.input_path):
             self.test_file = read_jsonl(self.args.input_path)
             print(f"Input path: {self.args.input_path}")
-        self.idx2tokid = self.tok.encode(' '.join([str(x) for x in range(1, self.args.listwise_k+1)]))[:-1]
         self.model = self.load_model()
         self.num_forward = 0
-
-    def write_json_file(self, path, data):
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=4)
-        print(f"Writing to {path} done!")
 
     def write_jsonl_file(self, path, data):
         if self.args.measure_flops:
@@ -78,28 +47,33 @@ class ListT5Evaluator():
         start = time.time()
         print("Loading model..")
         print(f"Loading fid model from {self.args.model_path}")
-        model = FiDT5.from_pretrained(self.args.model_path,n_passages = self.args.topk,
-                                       n_special_tokens=self.args.n_special_tokens, tokenizer=self.tok).to('cuda')
-
+        model = FiDT5.from_pretrained(
+            self.args.model_path,
+            n_passages = self.args.topk,
+            n_special_tokens=self.args.n_special_tokens,
+            tokenizer=self.tok).to('cuda')
         end = time.time()
+        
         print(f"Done! took {end-start} second")
         model.eval()
         if self.args.measure_flops:
             self.prof = FlopsProfiler(model)
-            self.prof.start_profile()
+            self.prof.start_profile()        
         return model
 
     def make_input_tensors(self, texts):
-        raw = self.tok(texts, return_tensors='pt',
-                padding=self.args.padding, max_length=self.args.max_input_length,
-                truncation=True).to('cuda')
+        raw = self.tok(
+            texts,
+            return_tensors='pt',
+            padding=self.args.padding,
+            max_length=self.args.max_input_length,
+            truncation=True).to('cuda')
         input_tensors = {'input_ids': raw['input_ids'].unsqueeze(0),
                 'attention_mask': raw['attention_mask'].unsqueeze(0)}
         return input_tensors
-    
+
     def make_listwise_text(self, question, ctxs, sep='|'):
         out = []
-
         for i in range(len(ctxs)):
             if self.args.n_special_tokens >= 1:
                 special_str = "".join([f"<extra_id_{x}>" for x in range(0, self.args.n_special_tokens)])
@@ -110,9 +84,10 @@ class ListT5Evaluator():
         return out
 
     def run_inference(self, input_tensors):
-        output = self.model.generate_by_single_logit(**input_tensors,
-                                                     max_length = self.args.max_gen_length,
-                                                     return_dict=False),
+        output = self.model.generate_by_single_logit(
+            **input_tensors,
+            max_length = self.args.max_gen_length,
+            return_dict=False),
         self.num_forward += 1
         
         return output[0]
@@ -133,7 +108,7 @@ class ListT5Evaluator():
         
         print("Model output: ", gen_out)        
         out_rel_indexes = []
-        for i, x in enumerate(gen_out):
+        for x in enumerate(gen_out):
             if x in topk_possible:
                 out_rel_indexes.append(x)
                 topk_possible.remove(x)
@@ -164,7 +139,6 @@ class ListT5Evaluator():
         reranked_instances = []
         len_question = []
         for instance in tqdm(self.test_file):
-
             question = instance[self.args.question_text_key]
             items = instance[self.args.firststage_result_key][:self.args.topk]
 
@@ -174,16 +148,16 @@ class ListT5Evaluator():
                 items = items[::-1]
             elif self.args.initial == 'random':
                 random.shuffle(items)
+            
             topk_ctxs = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in items]
             self.model.n_passages = len(topk_ctxs)
-            # self.model.encoder.encoder_batch_size = self.args.encoder_batch_size
             len_question.append(len(question))
 
             if len(topk_ctxs) > 0:
                 index = self.direct_rerank(question, topk_ctxs, k=self.args.topk)
             else:
-                # If no candidate passages are available, skip the instance
                 index = []
+
             reranked_items = []
 
             for i, pid in enumerate(index):
@@ -191,12 +165,10 @@ class ListT5Evaluator():
                 template  = items[pid]
                 template['orig_'+self.args.score_key] = template[self.args.score_key]
                 template[self.args.score_key] = 100000 - i                
-
                 reranked_items.append(template)
+
             instance[self.args.firststage_result_key] = reranked_items
-
             reranked_instances.append(instance)
-
         self.write_jsonl_file(self.args.output_path, reranked_instances)
         ndcg_k, scores = run_direct_rerank_eval(self.args.output_path, k=self.args.topk)
 
@@ -205,14 +177,16 @@ class ListT5Evaluator():
 def run_reranker(args):
     module = ListT5Evaluator(args)
 
-    he = time.time()
+    start = time.time()
     ndcg_10, scores = module.run_direct_rerank()
-    hehe = time.time()
-    print(f"Total elapsed time: {hehe-he}")    
-    print("Elasped time per query: ", (hehe-he)/len(module.test_file))
+    end = time.time()
+    print(f"Total elapsed time: {end-start}")    
+    print("Elasped time per query: ", (end-start)/len(module.test_file))
     if args.measure_flops:
         flops = module.flops
         num_forward = module.num_forward
+        print(f"Total number of forward passes: {num_forward}")
+        print(f"Total flops: {flops}")
     else:
         flops = 0
         num_forward = 0
@@ -258,43 +232,30 @@ def run_reranker_all(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    # Dataset key setup
-    parser.add_argument('--firststage_result_key', default='bm25_results', type=str)
-    parser.add_argument('--docid_key', default='docid', type=str)
-    parser.add_argument('--pid_key', default='pid', type=str)
-    parser.add_argument('--qrels_key', default='qrels', type=str)
-    parser.add_argument('--score_key', default='bm25_score', type=str)
+    # default key setup
     parser.add_argument('--question_text_key', default='q_text', type=str)
+    parser.add_argument('--firststage_result_key', default='bm25_results', type=str)
+    parser.add_argument('--score_key', default='bm25_score', type=str)
     parser.add_argument('--text_key', default='text', type=str)
     parser.add_argument('--title_key', default='title', type=str)
-    parser.add_argument('--n_special_tokens', default=1, type=int)
-
-    # 여기 부분 수정해주기. 기본 모델이 ListT5-base로 되어있음
-    parser.add_argument('--model_path', default='Soyoung97/ListT5-base', type=str)
-    parser.add_argument('--topk', default=100, type=int, help='number of initial candidate passages to consider') 
-    parser.add_argument('--score_mode', default='default', type=str, help='default or logit')
     
-    parser.add_argument('--max_input_length', type=int, default=-1) # depends on each individual data setup
-    parser.add_argument('--padding', default='max_length', type=str)
-    parser.add_argument('--listwise_k', default=5, type=int)
-    parser.add_argument('--rerank_topk', default=10, type=int)
-    parser.add_argument('--decoding_strategy', default='single', type=str)
-    parser.add_argument('--target_seq', default='token', type=str)
-
-    parser.add_argument('--seed', default=0, type=int)
+    # default model setup
+    parser.add_argument('--model_path', default='bulbna/MVP-base', type=str)
     parser.add_argument('--input_path', type=str, default='./eval_data/dl19.jsonl')
     parser.add_argument('--output_path', type=str, default='./outputs/dl19.jsonl')
-    # Testing positional Bias
-    parser.add_argument('--initial', default='origin', type=str)
+    parser.add_argument('--topk', default=100, type=int, help='number of initial candidate passages to consider') 
+    parser.add_argument('--max_input_length', type=int, default=-1) # depends on each individual data setup
+    parser.add_argument('--padding', default='max_length', type=str)
+    parser.add_argument('--n_special_tokens', default=1, type=int)
 
+    # Position bias setup
+    parser.add_argument('--initial', default='origin', type=str)
+    parser.add_argument('--seed', default=0, type=int)
+    
     # profiling setup
     parser.add_argument('--measure_flops', action='store_true')
-    parser.add_argument('--skip_no_candidate', action='store_true', help='skip instances with no gold qrels included at first-stage retrieval for faster inference, only works when gold qrels are available')
-    parser.add_argument('--skip_issubset', action='store_true', help='skip the rest of reranking when the gold qrels is a subset of reranked output for faster inference, only works when gold qrels are available')
 
     args = parser.parse_args()
-    if args.measure_flops:
-        from deepspeed.profiling.flops_profiler import FlopsProfiler
     res = {}
     random.seed(args.seed)
     args.max_gen_length = args.topk + 1
@@ -309,18 +270,8 @@ def main():
             raise Exception
         
     Path(args.output_path).parent.mkdir(exist_ok=True, parents=True)
-    start_time = time.time()
     ndcg_10, scores, flops, num_forwards = run_reranker(args)
-    res['flops'] = flops
-    res['num_forwards'] = num_forwards
-    res[args.output_path] = scores
-    res['ndcg@10'] = ndcg_10
-    end_time = time.time()
-    res['time_duration'] = end_time - start_time
-    print("========= RESULT =========")
-    print(args.model_path)
-    print(res)
-    print("========= RESULT =========")
+    
     return res
 
 

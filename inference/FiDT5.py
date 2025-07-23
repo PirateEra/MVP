@@ -47,17 +47,6 @@ class FiDT5(transformers.T5ForConditionalGeneration):
         self.n_special_tokens = n_special_tokens
         self.wrap_encoder(n_special_tokens=self.n_special_tokens)        
         
-        
-    def forward_(self, **kwargs):
-        if 'input_ids' in kwargs:
-            kwargs['input_ids'] = kwargs['input_ids'].view(kwargs['input_ids'].size(0), -1)
-        if 'attention_mask' in kwargs:
-            kwargs['attention_mask'] = kwargs['attention_mask'].view(kwargs['attention_mask'].size(0), -1)
-
-        return super(FiDT5, self).forward(
-            **kwargs
-        )
-
     # We need to resize as B x (N * L) instead of (B * N) x L here
     # because the T5 forward method uses the input tensors to infer
     # dimensions used in the decoder.
