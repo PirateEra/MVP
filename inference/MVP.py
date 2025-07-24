@@ -9,36 +9,19 @@ import torch
 import transformers
 import torch.nn.functional as F
 from torch import nn
-from torch.nn import CrossEntropyLoss
-import numpy as np
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 from transformers.file_utils import ModelOutput
-from transformers import T5Tokenizer
 
 @dataclass
 class RankingOutput(ModelOutput):
     loss: Optional[torch.FloatTensor] = None
     logits: Optional[torch.FloatTensor] = None
-    ranking: Optional[torch.LongTensor] = None
-    last_hidden_state: Optional[torch.FloatTensor] = None
-    passage_embed: Optional[torch.FloatTensor] = None
 
 
-class PointNetwork(nn.Module):
-    def __init__(self, input_dim=None, output_dim=1):
-        super(PointNetwork, self).__init__()
-        self.fc = nn.Linear(input_dim, output_dim)
-
-    def forward(self, x):
-        return self.fc(x)
-
-class FiDT5(transformers.T5ForConditionalGeneration):
-    # 이 부분 Parameter는 Train Code에 따라 달라질 예정.
+class MVP(transformers.T5ForConditionalGeneration):
     def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5, tokenizer=None):
         super().__init__(config)
-        ### jeongwoo
-        self.topk_attn_indices = []
         self.n_passages = n_passages
         self.tokenizer = tokenizer
         self.pad_token_id = self.tokenizer.pad_token_id
@@ -53,16 +36,12 @@ class FiDT5(transformers.T5ForConditionalGeneration):
     # EncoderWrapper resizes the inputs as (B * N) x L.
 
     def orthogonal_loss(self, hidden_states, bsz):
-
         hidden_states = hidden_states.view(hidden_states.size(0), -1).view(bsz, self.n_special_tokens, -1)
         last_hidden_states_norm = F.normalize(hidden_states, p=2, dim=-1)
-        dot_product = torch.bmm(last_hidden_states_norm, last_hidden_states_norm.transpose(1, 2)) # (bsz, n_special_tokens, n_special_tokens)
-        
-        # Ignore the diagonal
+        dot_product = torch.bmm(last_hidden_states_norm, last_hidden_states_norm.transpose(1, 2))
         I = torch.eye(self.n_special_tokens, device=hidden_states.device).unsqueeze(0)
         I = I.repeat(bsz, 1, 1)
         diff = dot_product - I
-
         loss = (diff ** 2).sum(dim=(1, 2)).mean() 
 
         return loss
@@ -78,26 +57,11 @@ class FiDT5(transformers.T5ForConditionalGeneration):
         label_dist: Optional[torch.FloatTensor] = None,
         **kwargs
     )->RankingOutput:
-        r'''
-        kwargs
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        decoder_input_ids: Optional[torch.LongTensor] = None,
-        decoder_attention_mask: Optional[torch.BoolTensor] = None,
-        encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-        labels: Optional[torch.LongTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
-        '''
-
-        
+        """
+        Multi-View Encoding and Anchor-Guided Decoding using T5-based Fusion-in-Decoder model.
+        """
         # 1. resize input_ids and attention_mask and get encoder_outputs
         if input_ids != None:
-            # inputs might have already be resized in the generate method
             if input_ids.dim() == 3:
                 self.encoder.n_passages = input_ids.size(1)
                 self.n_passages = input_ids.size(1)
@@ -107,7 +71,7 @@ class FiDT5(transformers.T5ForConditionalGeneration):
         if kwargs.get('return_dict') is None:
             kwargs['return_dict'] = False
         
-        # 2. get encoder_outputs if not provided
+        # 2. encoding
         if kwargs.get('encoder_outputs') is None:
             kwargs['output_attentions'] = False
             self.encoder.n_passages = self.n_passages
@@ -120,25 +84,18 @@ class FiDT5(transformers.T5ForConditionalGeneration):
             }
             encoder_outputs, attention_mask = self.encoder(**encoder_kwargs)
             kwargs["encoder_outputs"] = encoder_outputs
-        # update encoder_outputs and attention_mask after pooling in EncoderWrapper if provided
         else:
             encoder_outputs, attention_mask = kwargs["encoder_outputs"]
             kwargs["encoder_outputs"] = encoder_outputs
         
-        # 3. get decoder input embeds with encoder_outputs and labels
-            # always start with pad token
-            # (hsz) -> (bsz, k, hsz)
-            # single_token_decoding -> Only generate one token in FiD list 
-            # autoregressive decoding -> shift t
+        # 3. decoding
         bsz = input_ids.size(0)
-
-        # Reshape encoder Outputs that can be used in the decoder
-        # Special Tokens which are in the same position will be concatenated
         reshaped = encoder_outputs[0].view(bsz, self.n_passages, self.n_special_tokens, -1)
         transposed = reshaped.permute(0, 2, 1, 3)
         passage_embed = transposed.reshape(bsz * self.n_special_tokens, self.n_passages, -1)
         attention_mask = torch.ones(passage_embed.size(0), passage_embed.size(1), dtype=torch.long).to(attention_mask.device)
 
+        # inference
         if labels is None:
             pad_token_embed = self.shared.weight[self.pad_token_id]
             decoder_input_embed = pad_token_embed.view(1, 1, -1).expand(passage_embed.size(0), 1, -1)
@@ -151,22 +108,15 @@ class FiDT5(transformers.T5ForConditionalGeneration):
                     return_dict=kwargs['return_dict'],
                 )
         
+        # training
         if labels is not None and decoder_input_ids is None:
-            # get decoder inputs from shifting lm labels to the right
             decoder_input_ids = self._shift_right(labels)
-            # Decoder input ids shape : (bsz, 1).
-            # Expand it to (bsz * self.n_special_tokens, 1).
             decoder_input_ids = decoder_input_ids.unsqueeze(1).expand(-1, self.n_special_tokens, -1).reshape(-1, decoder_input_ids.size(-1)) 
-            # if auto-regressive decoding, use except for the last token
             if labels.size(1) != 1:
                 decoder_input_ids = decoder_input_ids[:, :-1]
                 decoder_attention_mask = decoder_attention_mask[:, :-1]
 
-            # Call decoder based on decoder input type (nl token embeddin or ranking vector)
             decoder_input_embed = self.shared(decoder_input_ids)
-            # passage_embed = encoder_outputs[0]
-            # lookahead pooling
-
             decoder_outputs = self.decoder(
                 inputs_embeds=decoder_input_embed,
                 encoder_hidden_states=passage_embed,
@@ -174,25 +124,13 @@ class FiDT5(transformers.T5ForConditionalGeneration):
                 return_dict=kwargs['return_dict']
             )
         
-        # generate when pad token is the only token
         last_hidden_state = decoder_outputs[0].to(decoder_outputs[0].device)                
         
-        # 4. get logits by dot product between 1) last hidden state and 2) encoder outputs(ranking vectors)
-
-        # Calculate COSINE SIMILARITY BETWEEN EACH LAST HIDDEN STATES (THERE ARE 4 LAST HIDDEN STATES)
-        
-        # lhs_norm = F.normalize(last_hidden_state, p=2, dim=-1)
-
-
+        # 4. get logits by dot product between 1) anchor vector(last_hidden_state) and 2) relevance vectors(passage_embed)
         logits = torch.einsum('bsh,bph->bsp', last_hidden_state, passage_embed)
         logits = logits.view(bsz, self.n_special_tokens, self.n_passages)
-        # logits_temp = logits
         logits = logits.mean(dim=1)
 
-
-        # 이부분은 Training Code가 다 만들어진 다음에 수정될 예정.
-        # Step 1 에서는 ListNet을 사용하고, Step 2에서는 RankNet을 사용함.
-        # 이 두 함수를 Training Code 완성되고 난 다음에 가져와야함.
         loss = 0
         if labels is not None:
             loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
@@ -201,26 +139,14 @@ class FiDT5(transformers.T5ForConditionalGeneration):
                 logits = torch.nn.functional.softmax(logits, dim=-1)
                 list_loss = loss_fct(logits.view(-1, logits.size(-1)), label_dist.view(-1, label_dist.size(-1)))
                 orthogonal_loss = self.orthogonal_loss(last_hidden_state, bsz)
-
             loss = list_loss + self.local_weight * orthogonal_loss
-        else:
-
-            loss = 0
             
         return RankingOutput(
             loss=loss,
             logits=logits,
-            # ranking = logits_temp,
-            # passage_embed=passage_embed,
-            # last_hidden_state=last_hidden_state,
-            # ranking=last_hidden_state,
         )
     
-
-    # Calculate the topk indices based on the logits
-    # Only Generate 1 token
-    def generate_by_single_logit(self, input_ids=None, attention_mask=None, **kwargs):
-
+    def generate_ranklist(self, input_ids=None, attention_mask=None, **kwargs):
         outputs = self.forward(input_ids=input_ids, attention_mask=attention_mask, **kwargs)
         if outputs.logits.dim() == 3:
             logits = outputs.logits.squeeze(1).to(input_ids.device)
@@ -314,23 +240,15 @@ class EncoderWrapper(torch.nn.Module):
         self.n_special_tokens = n_special_tokens
         apply_checkpoint_wrapper(self.encoder, use_checkpoint)
 
-    def set_input_embeddings(self, new_embeddings):
-        """
-        This method allows the embedding layer to be updated
-        with the new resized embedding.
-        """
-        self.encoder.set_input_embeddings(new_embeddings)
-        
     def forward(self, input_ids=None, attention_mask=None, **kwargs):
         bsz, total_length = input_ids.shape
         passage_length = total_length // self.n_passages
         input_ids = input_ids.view(bsz*self.n_passages, passage_length)
         attention_mask = attention_mask.view(bsz*self.n_passages, passage_length)
-
-        with torch.no_grad():
+        
+        with torch.no_grad() if not self.training else torch.enable_grad():
             outputs = self.encoder(input_ids, attention_mask, **kwargs)
 
-        # Extract the last hidden state of the special tokens
         last_hidden_state = outputs[0][:, :self.n_special_tokens, :]
         last_hidden_state = last_hidden_state.contiguous().view(bsz, self.n_passages*self.n_special_tokens, -1).to(outputs[0].device)
 

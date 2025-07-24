@@ -3,7 +3,7 @@ from tqdm import tqdm
 import jsonlines
 from transformers import T5Tokenizer
 from pathlib import Path
-from FiDT5 import FiDT5
+from MVP import MVP
 import random
 from beir_eval import run_direct_rerank_eval
 from beir_length_mapping import BEIR_LENGTH_MAPPING
@@ -48,7 +48,7 @@ class ListT5Evaluator():
         start = time.time()
         print("Loading model..")
         print(f"Loading fid model from {self.args.model_path}")
-        model = FiDT5.from_pretrained(
+        model = MVP.from_pretrained(
             self.args.model_path,
             n_passages = self.args.topk,
             n_special_tokens=self.args.n_special_tokens,
@@ -88,7 +88,7 @@ class ListT5Evaluator():
         return out
 
     def run_inference(self, input_tensors):
-        output = self.model.generate_by_single_logit(
+        output = self.model.generate_ranklist(
             **input_tensors,
             max_length = self.args.max_gen_length,
             return_dict=False),
