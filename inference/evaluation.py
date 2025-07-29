@@ -52,7 +52,7 @@ class ListT5Evaluator():
             self.args.model_path,
             n_passages = self.args.topk,
             n_special_tokens=self.args.n_special_tokens,
-            tokenizer=self.tok).to('cuda')
+            ).to('cuda')
         end = time.time()
         
         print(f"Done! took {end-start} second")

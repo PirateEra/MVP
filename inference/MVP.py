@@ -20,11 +20,10 @@ class RankingOutput(ModelOutput):
 
 
 class MVP(transformers.T5ForConditionalGeneration):
-    def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5, tokenizer=None):
+    def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5):
         super().__init__(config)
         self.n_passages = n_passages
-        self.tokenizer = tokenizer
-        self.pad_token_id = self.tokenizer.pad_token_id
+        self.pad_token_id = config.pad_token_id
         self.softmax_temp = softmax_temp
         self.local_weight = local_weight
         self.n_special_tokens = n_special_tokens
