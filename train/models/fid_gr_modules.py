@@ -25,7 +25,6 @@ import math
 import time
 import random
 from tqdm import tqdm
-### ADD THIS PART FOR CALCULATING nDCG@1,5,10 for the test set
 from models.fid_gr_modules_valid import FiDGRDatasetForTest
 from beir.retrieval.evaluation import EvaluateRetrieval
 
@@ -49,12 +48,10 @@ class FiDGRDataset(SharedDataset):
         self.len = len(self.dataset)
 
     def format_msmarco_data(self, dataset, split):
-        res = []
-        data = dataset
+        data = [x for x in dataset if len(x['ret']) == self.args.n_passages]
         print(f"Orig: {len(dataset)}, After: {len(data)}")
         del self.dataset
         return data
-
 
     def __len__(self):
         return self.len
@@ -80,9 +77,8 @@ class FiDGRDataset(SharedDataset):
         except IndexError:
             print(f"Error!! idx {pos_idx}, while len {len(raw['ret'])}")
             raise Exception
-
         neg_psgs = raw['ret'][:pos_idx] + raw['ret'][pos_idx + 1 :]
-        rand_pos_idx = random.choice(range(self.args.listwise_k))
+        rand_pos_idx = random.choice(range(self.args.n_passages))
         shuffled_psgs = neg_psgs[:rand_pos_idx] + [pos_psg] + neg_psgs[rand_pos_idx:]
 
         bm25_scores = [x['bm25_score'] for x in shuffled_psgs]
@@ -90,17 +86,18 @@ class FiDGRDataset(SharedDataset):
         if max_scores != bm25_scores[rand_pos_idx]:
             bm25_scores[rand_pos_idx] = max_scores + 1
         sort_list = [str(x+1) for x in np.argsort(bm25_scores)]
-        sort_list = reversed(sort_list)
+        if 'posfirst' in self.args.sub_mode:
+            sort_list = reversed(sort_list)
         converted = ' '.join(sort_list)
 
         if self.args.use_special_tokens:
             if self.args.n_special_tokens > 1:
                 special_tokens = [f'<extra_id_{i}>' for i in range(0, self.args.n_special_tokens)]
-                special_string = ''.join(special_tokens)
-                input_texts = [special_string + f" | Query: {raw['query']} | Context: {x['text']}" for i, x in enumerate(shuffled_psgs)]
+                soft_prompts = ''.join(special_tokens)
+                input_texts = [soft_prompts + f" | Query: {raw['query']} | Context: {x['text']}" for i, x in enumerate(shuffled_psgs)]
             else:
-                special_string = f'<extra_id_{self.args.extra_id}>'
-                input_texts = [f"{special_string} | Query: {raw['query']} | Context: {x['text']}" for i, x in enumerate(shuffled_psgs)]
+                soft_prompts = f'<extra_id_{self.args.extra_id}>'
+                input_texts = [f"{soft_prompts} | Query: {raw['query']} | Context: {x['text']}" for i, x in enumerate(shuffled_psgs)]
         else:
             input_texts = [f"Query: {raw['query']} | Context: {x['text']}" for i, x in enumerate(shuffled_psgs)]
 
@@ -108,47 +105,21 @@ class FiDGRDataset(SharedDataset):
         target = self.tokenize_t5(converted, max_length=self.args.max_output_length)
      
         if self.should_print() or self.args.debug:
-            if 'onlypos' in self.args.sub_mode:
-                self.print_io(idx, '\n>>> '.join(input_texts), f"{converted} ({pos_psg})")
-            else:
-                self.print_io(idx, [input_texts[0], input_texts[-1]], raw['pos_idx'])
+            self.print_io(idx, [input_texts[0], input_texts[-1]], raw['pos_idx'])
         
         # get label distribution
-        option = self.args.dist_option # option 구현해야함
         ranks = list(map(int, converted.split()))
-
-        # give score distribution based on the rank of the passage
-
         scores = torch.zeros(len(ranks))
-        # for i, rank in enumerate(ranks):
-        #     scores[rank-1] = 1/(i+1)
-        if option == 'rank_inverse':
-            for i, rank in enumerate(ranks):
-                scores[rank-1] = 1/(i+1)
-        elif option == 'expo':
-            for i, rank in enumerate(ranks):
-                scores[rank-1] = np.exp(-i)
-        else:
-            raise NotImplementedError(f"Unknown distribution option: {option}") 
+        for i, rank in enumerate(ranks):
+            scores[rank-1] = 1/(i+1)
 
-
-        # softmax_temp scaling (hyperparameter)
         softmax_temp = self.args.softmax_temp
         scores = scores / softmax_temp
-
-        # softmax
         target_dist = torch.nn.functional.softmax(scores, dim=0)
-        
         return source, target, target_dist
 
     def __getitem__(self, idx):
-        if 'listwise' in self.args.sub_mode:
-            source, target, target_dist = self.convert_listwise_to_features(idx)
-        elif 'split' in self.args.sub_mode:
-            source, target = self.convert_split_to_features(idx)
-        else:
-            source, target = self.convert_to_features(idx)
-        #print(f"Source shape: {source['input_ids'].shape}")
+        source, target, target_dist = self.convert_listwise_to_features(idx)
         res = {
             'idx': idx,
             "source_ids": source['input_ids'],
@@ -177,25 +148,18 @@ class FiDGRModel(SharedModel):
         self.text_len = 0
 
     def get_dataset(self, split):
-        ## 이걸로 데이터 받아온다.
-        ## 근데 이걸로 데이터를 받아올 경우에는 Train과 Validation 데이터셋이 동일하다. 
-        ## Split이 validation일 경우에는 다르게 받아와야함.
-        
-
         if split == 'validation':
             dataset = FiDGRDatasetForTest(
-                tokenizer = self.tokenizer, split = split, args = self.args
+                tokenizer = self.tokenizer, split=split, args = self.args
             )
         else:
             dataset = FiDGRDataset(
                 tokenizer=self.tokenizer, split=split, args=self.args
             )
-        print('get Dataset')
-
-        
+        print('get Dataset')        
         return dataset
 
-    def forward(self, input_ids, attention_mask, lm_labels, label_dist, decoder_attention_mask, lookahead, aggr_mode=None):
+    def forward(self, input_ids, attention_mask, lm_labels, label_dist, decoder_attention_mask):
         return self.model(
             input_ids,
             attention_mask=attention_mask,
@@ -203,8 +167,6 @@ class FiDGRModel(SharedModel):
             decoder_attention_mask=decoder_attention_mask,
             labels=lm_labels,
             label_dist=label_dist,
-            lookahead=lookahead,
-            # aggr_mode=aggr_mode,
             global_step=self.global_step
         )
 
@@ -216,15 +178,12 @@ class FiDGRModel(SharedModel):
         lm_labels = lm_labels[:, 0].unsqueeze(1)
         decoder_attention_mask = decoder_attention_mask[:, 0].unsqueeze(1)
         
-        # if self.global_step < self.args.lookahead_step:    # no lookahead
         outputs = self(
             input_ids=batch["source_ids"],
             attention_mask=batch["source_mask"],
             lm_labels=lm_labels,
             label_dist=batch['target_dist'],
             decoder_attention_mask=decoder_attention_mask,
-            lookahead=False,
-            # aggr_mode=self.args.aggr_mode
         )
 
         loss = outputs[0]
@@ -239,8 +198,7 @@ class FiDGRModel(SharedModel):
                 logger=True,
                 sync_dist=True)
         loss = self._loss(batch)
-        # import IPython; IPython.embed()
-        # exit()
+        
         self.log(
             "train loss",
             loss,
@@ -265,13 +223,9 @@ class FiDGRModel(SharedModel):
             ),
             output_scores=True,
             return_dict_in_generate=True
-            #early_stopping=True,
         )
         _generated_ids = out.sequences
-        #scores = list(self.group2chunks(self.calculate_tokenwise_scores(out), n=self.args.val_beam_size))
         scores = list(self.group2chunks(out.sequences_scores.cpu().tolist(), n=self.args.val_beam_size))
-        #end = time.time()
-        #self.gen_time += end-start
         self.text_len += batch['source_ids'].shape[0]
         _generated_text = self.ids_to_text(_generated_ids)
         inum = len(_generated_ids) // self.args.val_beam_size
@@ -288,6 +242,7 @@ class FiDGRModel(SharedModel):
             split = 'val'
         idxs = batch['idx'].tolist()
         input_questions = self.ids_to_text(batch['source_ids'])
+        print(f"Test example: \nInput: {input_questions[0]},\nOutput: {generated_text[0]}\n Score: {scores[0]}")
         if return_elem:
             assert (
                 len(input_questions)
@@ -302,13 +257,11 @@ class FiDGRModel(SharedModel):
             raise NotImplementedError
 
     def _val_step(self, batch, return_elem=False):
-
-        output = self.model.generate_by_single_logit(input_ids = batch['source_ids'],
-                                                    attention_mask = batch['source_mask'],
-                                                    max_length = self.args.max_output_length,
-                                                    # aggr_mode = self.args.aggr_mode,
-                                                    return_dict=False)
-        
+        output = self.model.generate_ranklist(
+            input_ids = batch['source_ids'],
+            attention_mask = batch['source_mask'],
+            max_length = self.args.max_output_length,
+            return_dict=False)
         result = output[0]
         
         pid = [str(x[0]) for x in batch['pid']]
@@ -401,53 +354,53 @@ class FiDGRModel(SharedModel):
         assert len(_input) == len(_pred)
         self.rprec = 0
 
-    def _predict_step(self, batch):
-        out = self(
-            input_ids=batch["source_ids"],
-            attention_mask=batch["source_mask"],
-            lm_labels=self.encode_label_ids({'input_ids': batch['target_ids']})['input_ids'],
-            decoder_attention_mask=batch["target_mask"],
-        )
-        input_questions = self.ids_to_text(batch['source_ids'])
-        generated_text = self.decode_label_ids({'input_ids': batch['target_ids']})
+    # def _predict_step(self, batch):
+    #     out = self(
+    #         input_ids=batch["source_ids"],
+    #         attention_mask=batch["source_mask"],
+    #         lm_labels=self.encode_label_ids({'input_ids': batch['target_ids']})['input_ids'],
+    #         decoder_attention_mask=batch["target_mask"],
+    #     )
+    #     input_questions = self.ids_to_text(batch['source_ids'])
+    #     generated_text = self.decode_label_ids({'input_ids': batch['target_ids']})
         
-        score = [out.loss.item()]
-        # losses = torch.nn.functional.cross_entropy(out.logits.view(-1, out.logits.shape[-1]), batch['target_ids'].view(-1), reduction='none')
-        # scores = losses.view(batch['source_ids'].shape[0], -1).sum(-1).cpu().tolist()
+    #     score = [out.loss.item()]
+    #     # losses = torch.nn.functional.cross_entropy(out.logits.view(-1, out.logits.shape[-1]), batch['target_ids'].view(-1), reduction='none')
+    #     # scores = losses.view(batch['source_ids'].shape[0], -1).sum(-1).cpu().tolist()
         
-        return {
-                "input": input_questions,
-                "pred": generated_text,
-                "score": score
-            }
+    #     return {
+    #             "input": input_questions,
+    #             "pred": generated_text,
+    #             "score": score
+    #         }
         
 
-    def predict_step(self, batch, batch_idx):
-        ret_dict = self._predict_step(batch)
-        self.test_input_list.extend(ret_dict["input"])
-        self.test_pred_list.extend(ret_dict["pred"])
-        self.test_score_list.extend(ret_dict['score'])
+    # def predict_step(self, batch, batch_idx):
+    #     ret_dict = self._predict_step(batch)
+    #     self.test_input_list.extend(ret_dict["input"])
+    #     self.test_pred_list.extend(ret_dict["pred"])
+    #     self.test_score_list.extend(ret_dict['score'])
         
-    def on_predict_epoch_end(self, outputs):
-        os.makedirs(self.args.output_dir, exist_ok=True)
-        _input = self.test_input_list
-        _pred = self.test_pred_list
-        _score = self.test_score_list
-        chunks_dict = {}
-        for input_val, pred_val, score_val in zip(_input, _pred, _score):
-            if input_val in chunks_dict:
-                chunks_dict[input_val]['questions'].append(pred_val)
-                chunks_dict[input_val]['scores'].append(score_val)
-            else:
-                chunks_dict[input_val] = {'questions': [pred_val], 'scores': [score_val]}
+    # def on_predict_epoch_end(self, outputs):
+    #     os.makedirs(self.args.output_dir, exist_ok=True)
+    #     _input = self.test_input_list
+    #     _pred = self.test_pred_list
+    #     _score = self.test_score_list
+    #     chunks_dict = {}
+    #     for input_val, pred_val, score_val in zip(_input, _pred, _score):
+    #         if input_val in chunks_dict:
+    #             chunks_dict[input_val]['questions'].append(pred_val)
+    #             chunks_dict[input_val]['scores'].append(score_val)
+    #         else:
+    #             chunks_dict[input_val] = {'questions': [pred_val], 'scores': [score_val]}
         
-        output = []
-        for input, pred in chunks_dict.items():
-            line = {'full_question': input,
-             'pred': pred}
-            output.append(line)
-        import pdb; pdb.set_trace()
-        file_path = f"{self.args.output_dir}/generated_output_relq.json"
-        io_utils.write_json_file(file_path, output)
+    #     output = []
+    #     for input, pred in chunks_dict.items():
+    #         line = {'full_question': input,
+    #          'pred': pred}
+    #         output.append(line)
+    #     import pdb; pdb.set_trace()
+    #     file_path = f"{self.args.output_dir}/generated_output_relq.json"
+    #     io_utils.write_json_file(file_path, output)
 
-        self.rprec = 0
+    #     self.rprec = 0

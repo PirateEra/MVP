@@ -1,13 +1,11 @@
 import os
 import sys
-import json
 import torch
 import random
 import datetime
 from pathlib import Path
 import numpy as np
 import pytorch_lightning as pl
-import wandb
 from argparse import ArgumentParser
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
@@ -81,7 +79,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_output_length", default=20, type=int)
     ### jeongwoo
     parser.add_argument("--pooling_type", default=None, type=str)
-    parser.add_argument("--n_passages", default=20, type=int)
     parser.add_argument("--dist_option", default='rank_inverse', type=str)
     parser.add_argument("--softmax_temp", default=1.0, type=float)
     parser.add_argument("--add_special_tokens", action='store_true')
@@ -107,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument('--eval_steps', default=None, type=int)
     parser.add_argument('--warmup_steps', default=0, type=int)
     parser.add_argument('--num_train_epochs', default=1, type=int)
-    parser.add_argument('--listwise_k', default=20, type=int)
+    parser.add_argument('--n_passages', default=20, type=int)
     parser.add_argument('--encoder_output_k', default=-1, type=int)
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--early_stop', action='store_true')
@@ -134,10 +131,8 @@ if __name__ == "__main__":
         print("@@@ Both eval epochs and steps specified. Using eval_steps")
         args.eval_epochs = None
 
-    if args.store_in_disk:
-        args.output_dir = f'/data/kjun/checkpoints/MVT5_RDLLM/{args.name}'
-    else:
-        args.output_dir = f'/home/tako/kjun/checkpoints/{args.name}'
+    # args.output_dir = 'YOUR_DIRECTORY'+f'{args.name}'
+    args.output_dir = f'/data/kjun/checkpoints/MVT5_RDLLM/{args.name}'
 
     if args.encoder_output_k == -1:
         args.encoder_output_k = args.max_input_length
@@ -150,11 +145,12 @@ if __name__ == "__main__":
     args.command_str = command_str
     if args.wandb:
         arg2dict = vars(args)
-
         project_name = 'MVT5_RDLLM'
-
+        entity_name = 'listwiserank'
+        # project_name = 'PUT_YOUR_PROJECT_NAME'
+        # entity_name = 'PUT_YOUR_ENTITY_NAME'
         wandb_logger = WandbLogger(
-            project=project_name, name=args.name, entity='listwiserank',
+            project=project_name, name=args.name, entity=entity_name,
             config=arg2dict
         )
     else:

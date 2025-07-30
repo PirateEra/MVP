@@ -93,20 +93,11 @@ class FiDGRDatasetForTest(SharedDataset):
         return source, pid, qid, qrels
 
     def __getitem__(self, idx):
-        if 'listwise' in self.args.sub_mode:
-            source, pid, qid, qrels = self.convert_listwise_to_features(idx)
-        elif 'split' in self.args.sub_mode:
-            source, target = self.convert_split_to_features(idx)
-        else:
-            source, target = self.convert_to_features(idx)
-        #print(f"Source shape: {source['input_ids'].shape}")
+        source, pid, qid, qrels = self.convert_listwise_to_features(idx)
         res = {
             'idx': idx,
             "source_ids": source['input_ids'],
-            # "target_ids": target['input_ids'],
             "source_mask": source['attention_mask'],
-            # "target_mask": target['attention_mask'],
-            # "target_dist": target_dist
             'pid': pid,
             'qid': qid,
             'qrels': qrels

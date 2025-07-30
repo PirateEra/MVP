@@ -11,7 +11,7 @@ import string
 from datasets import load_dataset
 import pytorch_lightning as pl
 from transformers import get_linear_schedule_with_warmup, get_constant_schedule_with_warmup, T5Tokenizer, T5ForConditionalGeneration, BartTokenizer, BartForConditionalGeneration, Adafactor, T5Model, BartTokenizer, BartForConditionalGeneration
-from models.FiDT5 import FiDT5
+from models.MVP import MVP
 from deepspeed.ops.adam import DeepSpeedCPUAdam, FusedAdam
 
 # from transformers import logging
@@ -97,62 +97,27 @@ class SharedModel(pl.LightningModule):
     def select_model_by_mode(self, model_path):
         #if 't5' in model_path:
         if self.args.load_from_fid:
-            model = FiDT5.from_pretrained(
+            model = MVP.from_pretrained(
                 model_path,
                 pooling_type=self.args.pooling_type,
                 n_passages=self.args.n_passages,
                 softmax_temp=self.args.softmax_temp,
                 n_special_tokens = self.args.n_special_tokens,
                 local_weight=self.args.local_weight,
-                loss_type = self.args.loss_type,
-                score_type = self.args.score_type,
-                # topk_selection=self.args.topk_selection,
                 )
         else:
             model = T5ForConditionalGeneration.from_pretrained(model_path, device_map='auto')
-            if self.args.peft:
-                print(f"\n Got peft = True!!!")
-                from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
-                peft_config = LoraConfig(task_type=TaskType.SEQ_2_SEQ_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
-                model.enable_input_require_grads()
-                model = get_peft_model(model, peft_config)
-                model.print_trainable_parameters()
-            if self.args.fid or self.args.sortfid:
-                if 'copy_extra_ids' in self.args.sub_mode:
-                    print(f"Got copy_extra_ids. Copying weights of extra_id_10~extra_id_29, to {model_path}!")
-                    out_linear = model.get_output_embeddings()
-                    for i in range(32070, 32089): # token ids of extra_id_29~extra_id_11
-                        out_linear.weight.data[i] = out_linear.weight.data[32089].clone() # <extra_id_10>
-                    model.set_output_embeddings(out_linear)
-
-                
-                config = model.config
-                fid_model = FiDT5(
-                    config=config,
-                    pooling_type=self.args.pooling_type,
-                    n_passages=self.args.n_passages,
-                    softmax_temp=self.args.softmax_temp,
-                    n_special_tokens = self.args.n_special_tokens,
-                    local_weight=self.args.local_weight,
-                    loss_type = self.args.loss_type,
-                    score_type = self.args.score_type,
-                    # topk_selection=self.args.topk_selection,
-                    )
-                state_dict = model.state_dict()
-                del model
-                import gc, torch
-                gc.collect()
-                torch.cuda.empty_cache()
-                print("Loaded FiDT5 model")
-                fid_model.load_t5(state_dict )
-                print("Loaded T5 model")
-                
-                model = fid_model
-                # exit()
-
+            fid_model = MVP(
+                config=model.config,
+                n_passages=self.args.n_passages,
+                softmax_temp=self.args.softmax_temp,
+                n_special_tokens = self.args.n_special_tokens,
+                local_weight=self.args.local_weight,
+                )
+            fid_model.load_t5(model.state_dict())
+            model = fid_model
         print(f"\nLoading model from {model_path}!\n")
         return model
-
 
     def train_dataloader(self):
         train_dataset = self.get_dataset('train')

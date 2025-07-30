@@ -114,10 +114,7 @@ class FiDSortModel(SharedModel):
             self.test_score_list = []
         self.gen_time = 0
         self.text_len = 0
-        if 'poly1' in self.args.sub_mode:
-            self.criterion = Poly1CrossEntropyLoss(num_classes=self.args.listwise_k, reduction='mean')
-        else:
-            self.criterion = torch.nn.CrossEntropyLoss(ignore_index=-100)
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=-100)
         self.idx2tokid = self.tokenizer.encode(' '.join([str(x) for x in range(1, self.args.listwise_k + 1)]))[:-1]
 
     def get_dataset(self, split):
