@@ -57,7 +57,6 @@ class SharedModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        #if True: #$ 't5' in self.args.base_model:
         try:
             self.tokenizer = T5Tokenizer.from_pretrained(self.args.base_model)
         except:
@@ -95,7 +94,6 @@ class SharedModel(pl.LightningModule):
         return ans
 
     def select_model_by_mode(self, model_path):
-        #if 't5' in model_path:
         if self.args.load_from_fid:
             model = MVP.from_pretrained(
                 model_path,
@@ -122,27 +120,21 @@ class SharedModel(pl.LightningModule):
     def train_dataloader(self):
         train_dataset = self.get_dataset('train')
         print(f"## Number of train dataset: {len(train_dataset)}")
-        #train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=self.args.train_batch_size, drop_last=False, num_workers=self.args.num_workers)
         dataloader = DataLoader(train_dataset, shuffle=True, batch_size=self.args.train_batch_size, drop_last=False, num_workers=self.args.num_workers)
         print('dataloader')
 
         return dataloader
-        # commenting due to large size. Uncomment if necessary.
-        #self.dataloader_train = train_dataloader
-        #return train_dataloader
 
     def val_dataloader(self):
         val_dataset = self.get_dataset('validation')
         print(f"## Number of val dataset: {len(val_dataset)}")
         val_dataloader = DataLoader(val_dataset, shuffle=False, batch_size=self.args.eval_batch_size, drop_last=False, num_workers=self.args.num_workers)
-        #self.dataloader_val = val_dataloader
         return val_dataloader
 
     def test_dataloader(self):
         test_dataset = self.get_dataset('test')
         print(f"## Number of test dataset: {len(test_dataset)}")
         test_dataloader = DataLoader(test_dataset, shuffle=False, batch_size=self.args.eval_batch_size, drop_last=False, num_workers=self.args.num_workers)
-        #self.dataloader_test = test_dataloader
         return test_dataloader
 
     def lmap(self, f, x):
@@ -190,7 +182,6 @@ class SharedModel(pl.LightningModule):
             yield l[i:i+n]
     def configure_optimizers(self):
         if self.args.run_3b:
-            #return FusedAdam(self.parameters())
             return DeepSpeedCPUAdam(self.parameters())
         model = self.model
         no_decay = ["bias", "LayerNorm.weight"]

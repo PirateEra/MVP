@@ -27,9 +27,9 @@ import random
 from tqdm import tqdm
 from models.fid_gr_modules_valid import FiDGRDatasetForTest
 from beir.retrieval.evaluation import EvaluateRetrieval
-
 import sys
 import pdb
+
 class ForkedPdb(pdb.Pdb):
     def interaction(self, *args, **kwargs):
         _stdin = sys.stdin
@@ -63,10 +63,10 @@ class FiDGRDataset(SharedDataset):
         print_str += "=" * 80
         print(print_str)
 
-    def convert_listwise_to_features(self, idx):
+    def convert_listwise_to_features(self, idx): ## 여기다!!
         raw = self.dataset[idx]
         try:
-            pos_idx = int(raw['pos_idx']) - 1
+            pos_idx = int(raw['pos_idx']) - 1  # index starts with 0
         except:
             print(f"Cannot convert [{raw['pos_idx']}] to int!!")
             pos_idx = raw['pos_idx'].split(' ')[0]
@@ -311,7 +311,10 @@ class FiDGRModel(SharedModel):
             prog_bar=False,
             logger=True,
             sync_dist=True)
+
+
         return ndcg.items()
+
 
     def validation_step(self, batch, batch_idx):
         return self._val_step(batch)

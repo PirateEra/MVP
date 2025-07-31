@@ -20,7 +20,7 @@ class RankingOutput(ModelOutput):
 
 
 class MVP(transformers.T5ForConditionalGeneration):
-    def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=0.5):
+    def __init__(self, config, n_passages=5, softmax_temp=1, n_special_tokens=0, local_weight=1.0):
         super().__init__(config)
         self.n_passages = n_passages
         self.pad_token_id = config.pad_token_id
@@ -107,7 +107,7 @@ class MVP(transformers.T5ForConditionalGeneration):
                     return_dict=kwargs['return_dict'],
                 )
         
-        # training
+        # train
         if labels is not None and decoder_input_ids is None:
             decoder_input_ids = self._shift_right(labels)
             decoder_input_ids = decoder_input_ids.unsqueeze(1).expand(-1, self.n_special_tokens, -1).reshape(-1, decoder_input_ids.size(-1)) 
