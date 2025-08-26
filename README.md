@@ -17,4 +17,4 @@ conda env create -f mvp.yaml
 ```
 
 ### How to Use
-* Run MVP
+TBU
