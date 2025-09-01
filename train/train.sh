@@ -35,7 +35,7 @@ for s in "${seed[@]}"; do
                 --max_input_length 256 --max_output_length 5 --n_passages ${np}\
                 --sub-mode normalize_positive_shuffle_pos_sort_posfirst \
                 --lr_scheduler linear --fid \
-                --pooling_type rv --n_special_tokens $ns --special_pooling max \
+                --pooling_type rv --n_special_tokens $ns \
                 --local_weight $lw \
                 --decoding_strategy single \
                 --target_seq token \
