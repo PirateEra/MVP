@@ -1,1 +1,0 @@
-# MVT5_inference
