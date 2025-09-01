@@ -93,8 +93,8 @@ if __name__ == "__main__":
     parser.add_argument('--local_weight', default=1.0, type=float)
     parser.add_argument('--local_all', default=False, type=bool)    
     # file names
-    parser.add_argument("--train-files", default=['../dataset/downloads/nq-train-small.json'], nargs='+')
-    parser.add_argument("--eval-files", default=['../dataset/downloads/nq-dev.json'], nargs='+')
+    parser.add_argument("--train-files", default=['./data/train/train_col100_sampled_100_5.jsonl'], nargs='+')
+    parser.add_argument("--eval-files", default=['./data/validation/dl21.jsonl'], nargs='+')
     parser.add_argument('--gradient_accumulation_steps', default=1, type=int)
     parser.add_argument("--sub-mode", default='', type=str)
     parser.add_argument("--prompt_type", default='2', type=str)
@@ -111,21 +111,22 @@ if __name__ == "__main__":
     parser.add_argument('--encoder_output_k', default=-1, type=int)
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--early_stop', action='store_true')
+    parser.add_argument('--output_dir', default='../checkpoints/', type=str)
 
     # Calculate Score (cos, dot)
     # loss function (listnet, Ranknet)
     parser.add_argument('--score_type', default='dot', type=str)
     parser.add_argument('--loss_type', default="listnet", type=str)
-    parser.add_argument('--use_special_tokens', action='store_true')
+    parser.add_argument('--use_special_tokens', default=True)
     parser.add_argument('--extra_id', default=0, type=int)
 
-    parser.add_argument('--eval_epochs', default=None, type=int)
-    parser.add_argument('--store_in_disk', action='store_true')
-    
+    parser.add_argument('--eval_epochs', default=None, type=int)    
 
     args = parser.parse_args()
     args.weight_decay = 0
     args.adam_epsilon = 1e-8
+
+    args.output_dir += args.name
 
     if args.eval_epochs is None and args.eval_steps is None:
         print("@@@ No eval epochs or steps specified. Using eval_step default 1000")
@@ -133,11 +134,6 @@ if __name__ == "__main__":
     if args.eval_epochs is not None and args.eval_steps is not None:
         print("@@@ Both eval epochs and steps specified. Using eval_steps")
         args.eval_epochs = None
-
-    if args.store_in_disk:
-        args.output_dir = f'/data/kjun/checkpoints/MVT5_RDLLM/{args.name}'
-    else:
-        args.output_dir = f'/home/tako/kjun/checkpoints/{args.name}'
 
     if args.encoder_output_k == -1:
         args.encoder_output_k = args.max_input_length
@@ -151,10 +147,11 @@ if __name__ == "__main__":
     if args.wandb:
         arg2dict = vars(args)
 
-        project_name = 'MVT5_RDLLM'
+        project_name = 'PUT YOUR PROJECT NAME HERE'
+        entity_name = 'PUT YOUR ENTITY NAME HERE'
 
         wandb_logger = WandbLogger(
-            project=project_name, name=args.name, entity='listwiserank',
+            project=project_name, name=args.name, entity=entity_name,
             config=arg2dict
         )
     else:
@@ -163,6 +160,7 @@ if __name__ == "__main__":
         args.n_gpu = 1
     callbacks = []
 
+    # Store the best model based on validation NDCG@10
     checkpoint_callback = ModelCheckpoint(
         monitor='ndcg@10',                          
         mode='max',                                 
@@ -172,6 +170,7 @@ if __name__ == "__main__":
         verbose=True                                
     )
 
+    # Store model of every eval step
     # checkpoint_callback = ModelCheckpoint(
     #     monitor='global_step',
     #     mode='max',

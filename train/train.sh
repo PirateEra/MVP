@@ -23,13 +23,13 @@ for s in "${seed[@]}"; do
           for lw in "${local_weights[@]}"; do
             for warmup in "${warmup_ratio[@]}"; do
               # model_name="MVP_extra_${ns}_seed_${s}_RDLLM_ortho_${lw}_warmup_${warmup}_temp_${temp}"
-              model_name="reproduce_250729"
+              model_name="MVP"
                 # Run the training script with the current combination
                 CUDA_VISIBLE_DEVICES=0,1 python3 train.py --name $model_name \
                 --seed ${s}\
                 --base_model t5-base \
-                --train-files /data/kjun/data/train/train_col100_sampled_100_5.jsonl \
-                --eval-files /data/kjun/data/validation/dl21.jsonl \
+                --train-files /PATH/TO/TRAIN/FILE/train_col100_sampled_100_5.jsonl \
+                --eval-files /PATH/TO/TRAIN/FILE/dl21.jsonl \
                 --do_train --learning_rate $lr --gradient_accumulation_steps 2\
                 --train_batch_size 16 --eval_batch_size 1 --num_workers 0 \
                 --max_input_length 256 --max_output_length 5 --n_passages ${np}\

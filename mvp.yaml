@@ -1,4 +1,4 @@
-name: listt5
+name: mvp
 channels:
   - nvidia
   - defaults
@@ -372,4 +372,3 @@ dependencies:
       - xxhash==3.5.0
       - yarl==1.17.1
       - zipp==3.20.2
-prefix: /home/tako/anaconda3/envs/listt5
