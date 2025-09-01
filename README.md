@@ -43,6 +43,4 @@ TBU
 We implemented our model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
 
 ## Citation
-If you find our work useful for your research, please cite our paper:
-```
-```
+TBU
