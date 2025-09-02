@@ -22,7 +22,7 @@ def read_jsonl(path):
             
     return data
 
-class ListT5Evaluator():
+class MVPEvaluator():
     def __init__(self, args):
         self.args = args
         self.tok = T5Tokenizer.from_pretrained(self.args.model_path)
@@ -173,7 +173,7 @@ class ListT5Evaluator():
         return ndcg_k, scores
 
 def run_reranker(args):
-    module = ListT5Evaluator(args)
+    module = MVPEvaluator(args)
 
     start = time.time()
     ndcg_10, scores = module.run_direct_rerank()
@@ -194,7 +194,7 @@ def run_reranker(args):
 
 # IF input_path is a folder, run reranker for all files in the folder
 def run_reranker_all(args):
-    module = ListT5Evaluator(args)
+    module = MVPEvaluator(args)
 
     ndcg_10 = {}
     scores = {}
