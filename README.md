@@ -31,8 +31,8 @@ bash train.sh
 ```
 
 ## Model Checkpoints
-TBU
-
+1. [MVP-base](https://huggingface.co/Jun421/MVP-base) : ```Jun421/MVP-base```
+2. [MVP-3b](https://huggingface.co/Jun421/MVP-3b): ```Jun421/MVP-3b```
 ##  Dataset
 ### Evaluation Datasets
 TBU
