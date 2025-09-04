@@ -35,11 +35,17 @@ bash train.sh
 2. [MVP-3b](https://huggingface.co/Jun421/MVP-3b): ```Jun421/MVP-3b```
 ##  Dataset
 ### Evaluation Datasets
-TBU
-### Training Datasets
-TBU
+- [BM25-Top100](https://huggingface.co/datasets/Soyoung97/beir-eval-bm25-top100)```Soyoung97/beir-eval-bm25-top100```
+> **Note**: Our research was conducted using [ListT5](https://github.com/soyoung97/ListT5). The evaluation dataset is also available through that repository.
 
-## Acknowledge
+### Training Datasets
+- [Train/Valid](https://huggingface.co/datasets/Jun421/MVP-train)```Jun421/MVP-train```
+
+This dataset is derived from BEIR/MSMARCO license, and its usage is restricted to **academic purposes** only.
+> **Note**: Our training dataset is derived from the [Rank-DistiLLM](https://github.com/webis-de/rank-distillm)
+ dataset after further processing. The detailed post-processing procedure can be found in our paper.
+
+## Acknowledgments
 We implemented our model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
 
 ## Citation

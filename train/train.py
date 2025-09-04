@@ -93,8 +93,8 @@ if __name__ == "__main__":
     parser.add_argument('--local_weight', default=1.0, type=float)
     parser.add_argument('--local_all', default=False, type=bool)    
     # file names
-    parser.add_argument("--train-files", default=['./data/train/train_col100_sampled_100_5.jsonl'], nargs='+')
-    parser.add_argument("--eval-files", default=['./data/validation/dl21.jsonl'], nargs='+')
+    parser.add_argument("--train-files", default=['./data/train.jsonl'], nargs='+')
+    parser.add_argument("--eval-files", default=['./data/validation.jsonl'], nargs='+')
     parser.add_argument('--gradient_accumulation_steps', default=1, type=int)
     parser.add_argument("--sub-mode", default='', type=str)
     parser.add_argument("--prompt_type", default='2', type=str)
