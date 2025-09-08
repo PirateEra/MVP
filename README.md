@@ -8,6 +8,7 @@ This repository contains the official implementation for our EMNLP 2025 paper:
 > *Accepted to EMNLP 2025 Main Conference*
 
 ## Overview
+![MVP Motivation](assets\fig_MVP_motivation.png)
 Recent advances in large language models (LLMs) have shown impressive performance in passage reranking tasks. Despite their success, LLM-based methods still face challenges in efficiency and sensitivity to external biases.
 - (i) Existing models rely mostly on autoregressive generation and sliding window strategies to rank passages, which incurs heavy computational overhead as the number of passages increases.
 - (ii) External biases, such as positional or semantic bias, hinder the model’s ability to accurately represent passages and the input-order sensitivity.
