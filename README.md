@@ -57,4 +57,15 @@ This dataset is derived from BEIR/MSMARCO license, and its usage is restricted t
 We implemented our model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
 
 ## Citation
-TBU
+If you find our work useful for your research, please cite our paper:
+```
+@misc{na2025multiviewguidedpassagererankinglarge,
+      title={Multi-view-guided Passage Reranking with Large Language Models}, 
+      author={Jeongwoo Na and Jun Kwon and Eunseong Choi and Jongwuk Lee},
+      year={2025},
+      eprint={2509.07485},
+      archivePrefix={arXiv},
+      primaryClass={cs.IR},
+      url={https://arxiv.org/abs/2509.07485}, 
+}
+```
