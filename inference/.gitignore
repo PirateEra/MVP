@@ -3,3 +3,4 @@ deprecated/
 instructions/
 outputs/
 *.txt
+eval_data/
