@@ -1,5 +1,8 @@
-TEST_DATA=(dl19 dl20 trec-covid nfcorpus signal news robust04 scifact touche dbpedia-entity)
+# TEST_DATA=(dl19 dl20 trec-covid nfcorpus signal news robust04 scifact touche dbpedia-entity)
 # TEST_DATA=(dl19 dl20)
+TEST_DATA=(news)
+# TEST_DATA=(robust04)
+# TEST_DATA=(touche)
 # additional flags
 # --model_path Jun421/MVP-3b
 # --model_path Jun421/MVP-base
