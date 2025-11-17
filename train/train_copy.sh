@@ -43,7 +43,6 @@ for s in "${seed[@]}"; do
                 --dist_option rank_inverse --softmax_temp $temp \
                 --warmup_steps $warmup \
                 --eval_steps 2000 \
-                --wandb
               sleep 5
             done
           done
