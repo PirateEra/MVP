@@ -42,7 +42,7 @@ for s in "${seed[@]}"; do
                 --num_train_epochs 1 \
                 --dist_option rank_inverse --softmax_temp $temp \
                 --warmup_steps $warmup \
-                --eval_steps 2000 \
+                --eval_steps 2000 
               sleep 5
             done
           done
