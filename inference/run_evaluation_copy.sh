@@ -9,9 +9,10 @@ TEST_DATA=(dl19 dl19_rev dl19_shuffle dl20 dl20_rev dl20_shuffle news news_rev n
 # --model_path Jun421/MVP-3b
 # --model_path Jun421/MVP-base
 # --measure_flops 
+# --model_path ../checkpoints/MVP/best-epoch=00-global_step=24999.0.ckpt
 for data in ${TEST_DATA[@]}; do
     CUDA_VISIBLE_DEVICES=0 python3 ./evaluation.py --input_path ./eval_data/${data}.jsonl \
         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
         --n_special_tokens 4 \
-        --model_path Jun421/MVP-base
+        --model_path ../checkpoints/MVP/best-epoch=00-global_step=24999.0.ckpt
 done
