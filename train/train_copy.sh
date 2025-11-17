@@ -13,6 +13,8 @@ n_special_tokens=(4)
 local_weights=(1.0)
 warmup_ratio=(5)
 
+# --base_model t5-base \
+# --run_3b \
 
 # Loop through each combination of softmax_temp and learning_rate
 for s in "${seed[@]}"; do
@@ -27,7 +29,7 @@ for s in "${seed[@]}"; do
                 # Run the training script with the current combination
                 CUDA_VISIBLE_DEVICES=0,1 python3 train.py --name $model_name \
                 --seed ${s}\
-                --base_model t5-base \
+                --run_3b \
                 --train-files ./data/train.jsonl \
                 --eval-files ./data/validation.jsonl \
                 --do_train --learning_rate $lr --gradient_accumulation_steps 2\
