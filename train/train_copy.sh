@@ -9,7 +9,7 @@ seed=(0)
 learning_rates=(1e-04)
 n_passages=(5)
 softmax_temps=(0.8)
-n_special_tokens=(2)
+n_special_tokens=(1)
 local_weights=(1.0)
 warmup_ratio=(5)
 
@@ -42,7 +42,7 @@ for s in "${seed[@]}"; do
                 --num_train_epochs 1 \
                 --dist_option rank_inverse --softmax_temp $temp \
                 --warmup_steps $warmup \
-                --output_dir ../checkpoints_2views/ \
+                --output_dir ../checkpoints_1views/ \
                 --eval_steps 2000 
               sleep 5
             done
