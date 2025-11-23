@@ -15,6 +15,7 @@ for data in ${TEST_DATA[@]}; do
     CUDA_VISIBLE_DEVICES=0 python3 ./evaluation_copy.py --input_path ./eval_data/${data}.jsonl \
         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
         --n_special_tokens 6 \
-        --view_change random_shuffle_views \
+        --view_change one_number_views \
+        --view_number 0 \
         --model_path ../checkpoints_6views/MVP/tfmr_0_step17000
 done
