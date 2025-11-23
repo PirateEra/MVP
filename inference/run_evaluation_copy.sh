@@ -16,6 +16,6 @@ for data in ${TEST_DATA[@]}; do
         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
         --n_special_tokens 6 \
         --view_change one_number_views \
-        --view_number 4 \
+        --view_number 5 \
         --model_path ../checkpoints_6views/MVP/tfmr_0_step17000
 done
