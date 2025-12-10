@@ -153,8 +153,8 @@ class MVP(transformers.T5ForConditionalGeneration):
         # weight_tensor = torch.tensor([0.30, 0.15, 0.15, 0.40]).to(logits.device)
         # weight_tensor = torch.tensor([0.15, 0.15, 0.30, 0.40]).to(logits.device)
         # test 6-view model
-        weight_tensor = torch.tensor([0.25, 0.10, 0.10, 0.10, 0.10, 0.35]).to(logits.device)
-        # weight_tensor = torch.tensor([0.10, 0.10, 0.10, 0.10, 0.25, 0.35]).to(logits.device)
+        # weight_tensor = torch.tensor([0.25, 0.10, 0.10, 0.10, 0.10, 0.35]).to(logits.device)
+        weight_tensor = torch.tensor([0.10, 0.10, 0.10, 0.10, 0.25, 0.35]).to(logits.device)
 
         repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
         transposed = repeat_weight_tensor.T
