@@ -137,9 +137,9 @@ class MVP(transformers.T5ForConditionalGeneration):
         # only view 4: 
         # logits = logits[:, 3:4, :].squeeze(1)
         # only view 5: 
-        logits = logits[:, 4:5, :].squeeze(1)
+        # logits = logits[:, 4:5, :].squeeze(1)
         # only view 6: 
-        # logits = logits[:, 5:6, :].squeeze(1)
+        logits = logits[:, 5:6, :].squeeze(1)
 
         # weighted average for 4-view model
         # beir_avg = [49.530625, 49.65325, 50.54625, 51.144125]
