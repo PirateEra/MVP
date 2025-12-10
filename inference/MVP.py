@@ -135,9 +135,9 @@ class MVP(transformers.T5ForConditionalGeneration):
         # only view 3: 
         # logits = logits[:, 2:3, :].squeeze(1)
         # only view 4: 
-        logits = logits[:, 3:4, :].squeeze(1)
+        # logits = logits[:, 3:4, :].squeeze(1)
         # only view 5: 
-        # logits = logits[:, 4:5, :].squeeze(1)
+        logits = logits[:, 4:5, :].squeeze(1)
         # only view 6: 
         # logits = logits[:, 5:6, :].squeeze(1)
 
