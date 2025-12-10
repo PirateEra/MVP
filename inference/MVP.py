@@ -135,11 +135,22 @@ class MVP(transformers.T5ForConditionalGeneration):
         # only view 3: 
         # logits = logits[:, 2:3, :].squeeze(1)
         # only view 4: 
-        logits = logits[:, 3:4, :].squeeze(1)
+        # logits = logits[:, 3:4, :].squeeze(1)
         # only view 5: 
         # logits = logits[:, 4:5, :].squeeze(1)
         # only view 6: 
         # logits = logits[:, 5:6, :].squeeze(1)
+
+        # weighted average for 4-view model
+        beir_avg = [49.530625, 49.65325, 50.54625, 51.144125]
+        weights = [x/sum(beir_avg) for x in beir_avg]
+        weight_tensor = torch.tensor(weights)
+        repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
+        transposed = repeat_weight_tensor.T
+        repeat_over_batchsize = transposed.unsqueeze(0).repeat(bsz, 1, 1)
+        weight_multiplication = torch.mul(logits, repeat_over_batchsize)
+        logits = torch.sum(weight_multiplication, dim=1)
+
         # their original mean
         # logits = logits.mean(dim=1)
 
