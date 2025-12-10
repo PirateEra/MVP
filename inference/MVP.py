@@ -129,7 +129,7 @@ class MVP(transformers.T5ForConditionalGeneration):
         logits = torch.einsum('bsh,bph->bsp', last_hidden_state, passage_embed)
         logits = logits.view(bsz, self.n_special_tokens, self.n_passages)
         # only view 1: 
-        # logits = logits[:, 0:1, :].squeeze(1)
+        logits = logits[:, 0:1, :].squeeze(1)
         # only view 2: 
         # logits = logits[:, 1:2, :].squeeze(1)
         # only view 3: 
@@ -147,12 +147,12 @@ class MVP(transformers.T5ForConditionalGeneration):
         # weight_tensor = torch.tensor(weights).to(logits.device)
         # test
         # weight_tensor = torch.tensor([0.30, 0.15, 0.15, 0.40]).to(logits.device)
-        weight_tensor = torch.tensor([0.15, 0.15, 0.30, 0.40]).to(logits.device)
-        repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
-        transposed = repeat_weight_tensor.T
-        repeat_over_batchsize = transposed.unsqueeze(0).repeat(bsz, 1, 1)
-        weight_multiplication = torch.mul(logits, repeat_over_batchsize)
-        logits = torch.sum(weight_multiplication, dim=1)
+        # weight_tensor = torch.tensor([0.15, 0.15, 0.30, 0.40]).to(logits.device)
+        # repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
+        # transposed = repeat_weight_tensor.T
+        # repeat_over_batchsize = transposed.unsqueeze(0).repeat(bsz, 1, 1)
+        # weight_multiplication = torch.mul(logits, repeat_over_batchsize)
+        # logits = torch.sum(weight_multiplication, dim=1)
 
         # their original mean
         # logits = logits.mean(dim=1)

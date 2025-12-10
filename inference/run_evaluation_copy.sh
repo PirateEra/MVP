@@ -11,6 +11,8 @@ TEST_DATA=(dl19 dl20 trec-covid nfcorpus signal news robust04 scifact touche dbp
 # --model_path ../checkpoints_3views/MVP/tfmr_0_step24000
 # --model_path ../checkpoints_5views/MVP/tfmr_0_step17000
 # --model_path ../checkpoints_6views/MVP/tfmr_0_step17000
+
+# evaluate data on different extra_id_nr tokens
 # for data in ${TEST_DATA[@]}; do
 #     CUDA_VISIBLE_DEVICES=0 python3 ./evaluation_copy.py --input_path ./eval_data/${data}.jsonl \
 #         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
@@ -20,9 +22,18 @@ TEST_DATA=(dl19 dl20 trec-covid nfcorpus signal news robust04 scifact touche dbp
 #         --model_path ../checkpoints_6views/MVP/tfmr_0_step17000
 # done
 
+# evaluate data on 4-view model (their pre-trained model)
+# for data in ${TEST_DATA[@]}; do
+#     CUDA_VISIBLE_DEVICES=0 python3 ./evaluation_copy.py --input_path ./eval_data/${data}.jsonl \
+#         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
+#         --n_special_tokens 4 \
+#         --model_path Jun421/MVP-base
+# done
+
+# evaluate data on 6-view model (our trained model)
 for data in ${TEST_DATA[@]}; do
     CUDA_VISIBLE_DEVICES=0 python3 ./evaluation_copy.py --input_path ./eval_data/${data}.jsonl \
         --output_path ./outputs/mvp-${data}.jsonl --topk 100 \
-        --n_special_tokens 4 \
-        --model_path Jun421/MVP-base
+        --n_special_tokens 6 \
+        --model_path ../checkpoints_6views/MVP/tfmr_0_step17000
 done
