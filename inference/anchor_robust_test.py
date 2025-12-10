@@ -6,6 +6,7 @@ import string
 import numpy as np
 from evaluation import MVPEvaluator
 from beir_eval import run_direct_rerank_eval
+from tqdm import tqdm
 
 # My idea behind this test:
 # Usually, a reranker model looks at the group pointwise, implying it looks at passage A in isolation
@@ -208,21 +209,21 @@ class RobustnessTester(MVPEvaluator):
         topk_logits = topk_logits.values.tolist()
 
         return topk_indices, topk_logits
-    
+
     def rerank_instance_evaluation(self, instance, ranked_indices, passages: list[dict]):
         reranked_items = []
         for i, passage_idx in enumerate(ranked_indices):
             passage_idx = int(passage_idx)
             template  = passages[passage_idx]
             template['orig_'+self.args.score_key] = template[self.args.score_key]
-            template[self.args.score_key] = 100000 - i                
+            template[self.args.score_key] = 100000 - i
             reranked_items.append(template)
-        
+
         instance[self.args.firststage_result_key] = reranked_items
         data = [instance]
         ndcg_k, scores = run_direct_rerank_eval(data, k=self.args.retrieve_k, combined=True)
         return ndcg_k, scores
-    
+
     def rerank_dataset_evaluation(
         self,
         dataset_ranked_indices: list[list],
@@ -234,7 +235,7 @@ class RobustnessTester(MVPEvaluator):
         ):
             reranked_items = []
             for i, passage_idx in enumerate(ranked_indices):
-                passage_idx = int(passage_idx) - 1
+                passage_idx = int(passage_idx)
                 template  = passages[passage_idx]
                 template['orig_'+self.args.score_key] = template[self.args.score_key]
                 template[self.args.score_key] = 100000 - i                
@@ -246,8 +247,9 @@ class RobustnessTester(MVPEvaluator):
         ndcg_k, scores = run_direct_rerank_eval(reranked_instances, k=self.args.retrieve_k, combined=True)
         return ndcg_k, scores
 
-    def run_anchor_noise_test(self):
+    def run_anchor_noise_test(self, instance_idx: int):
         center_padded_print("Starting Anchor Robustness Test", pad_token="-")
+        print(f"Instance: {instance_idx}")
 
         noise_type = NoisePassages(self.args.noise)
         match noise_type:
@@ -260,9 +262,9 @@ class RobustnessTester(MVPEvaluator):
             case _:
                 raise ValueError("Unknown noise type")
         print(f"Mode: {noise_mode} ({noise_type})")
-        
+
         # We test on the first query (Index 0) of our test file
-        TARGET_IDX = 0
+        TARGET_IDX = instance_idx
         instance = self.test_file[TARGET_IDX]
         question = instance[self.args.question_text_key]
         bm25_results = instance[self.args.firststage_result_key]
@@ -366,9 +368,98 @@ class RobustnessTester(MVPEvaluator):
         ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_indices, bm25_results)
         print("Ranking with added noise")
         ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_stress_indices, noisy_bm25_results)
+    
+    def run_anchor_noise_test_on_dataset(self):
+        center_padded_print("Starting Anchor Robustness Test on full dataset", pad_token="-")
+
+        noise_type = NoisePassages(self.args.noise)
+        match noise_type:
+            case NoisePassages.NONE:
+                noise_mode = f"No noise. Rerank retrieved {self.args.retrieve_k}"
+            case NoisePassages.JUNK:
+                noise_mode = "Random Junk Noise"
+            case NoisePassages.RANDOM:
+                noise_mode = "Real Distractor Noise"
+            case _:
+                raise ValueError("Unknown noise type")
+        print(f"Mode: {noise_mode} ({noise_type})")
+
+        ranked_indices_list = []
+        bm25_results_list = []
+        ranked_stress_indices_list = []
+        noisy_bm25_results_list = []
+        
+        for instance_idx, instance in enumerate(tqdm(self.test_file)):
+            question = instance[self.args.question_text_key]
+            bm25_results = instance[self.args.firststage_result_key]
+            bm25_results_list.append(bm25_results)
+
+            qrels = instance["qrels"]
+            
+            # Format ALL original candidates
+            original_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in bm25_results]
+            original_pid = [x["pid"] for x in bm25_results]
+        
+            # First we get the ranking of the top 100 bm25, as if we run normal inference
+            ranked_indices, ranked_scores = self.get_ranking_scores(question, original_txt)
+            ranked_indices = ranked_indices[0]
+            ranked_indices_list.append(ranked_indices)
+
+            ranked_scores = ranked_scores[0]
+            ranked_pid = np.array(original_pid)[ranked_indices]
+            ranked_qrels = [qrels.get(pid, 0) for pid in ranked_pid]
+            
+            # Now we get the top K favorites of this original inference, for example the top 10 ranked documents
+            k = self.args.retrieve_k
+            top_k_indices = ranked_indices[:k]
+        
+            # Get the text of the top k
+            # top_passages = [original_txt[i] for i in top_k_indices]
+            top_passage_results = [bm25_results[i] for i in top_k_indices]
+
+            top_scores_ref = ranked_scores[:k]
+
+            # TEST (THE ACTUAL ROBUSTNESS TEST!)
+            # We always rank a total of 100 docs, so we get the noise of what we still need
+            noise_count = 100 - k
+            if noise_count < 0: noise_count = 0
+
+            match noise_type:
+                case NoisePassages.NONE:
+                    noise_passage_results = []
+                case NoisePassages.JUNK:
+                    noise_passage_results = self.generate_junk_passage_results(count=noise_count)
+                case NoisePassages.RANDOM:
+                    noise_passage_results = self.get_random_distractor_passage_results(instance_idx, count=noise_count)
+                case _:
+                    raise ValueError("Unknown noise type")
+            
+            # Create the list of query-passages to do inference on, which has the top k be the top-k we found and the rest noise
+            # Placing them at the top should be no issue, since the paper claims non-positional bias in the model
+            noisy_bm25_results = top_passage_results + noise_passage_results
+            noisy_bm25_results_list.append(noisy_bm25_results)
+
+            noisy_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in noisy_bm25_results]
+            noisy_pid = [x["pid"] for x in noisy_bm25_results]
+
+            ranked_stress_indices, ranked_stress_scores = self.get_ranking_scores(question, noisy_txt)
+            ranked_stress_indices = ranked_stress_indices[0]
+
+            ranked_stress_indices_list.append(ranked_stress_indices)
+
+            ranked_stress_scores = ranked_stress_scores[0]
+            ranked_stress_pid = np.array(noisy_pid)[ranked_stress_indices]
+            ranked_stress_qrels = [qrels.get(pid, 0) for pid in ranked_stress_pid]
+
+        center_padded_print("PERFORMANCE", pad_token="-")
+        print("Original ranking")
+        # ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_indices, bm25_results)
+        ndcg_k, scores = self.rerank_dataset_evaluation(ranked_indices_list, bm25_results_list)
+        print("Ranking with added noise")
+        # ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_stress_indices, noisy_bm25_results)
+        ndcg_k, scores = self.rerank_dataset_evaluation(ranked_stress_indices_list, noisy_bm25_results_list)
 
 
-        # ndcg_k, scores = self.rerank_dataset_evaluation([ranked_indices], [bm25_results])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -381,6 +472,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_gen_length', default=10, type=int)
     parser.add_argument('--measure_flops', action='store_true')
 
+    parser.add_argument('--instance_idx', type=int, default=None)
     parser.add_argument(
         '--noise',
         type=str,
@@ -399,7 +491,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     tester = RobustnessTester(args)
-    tester.run_anchor_noise_test()
+    
+    if args.instance_idx is not None:
+        tester.run_anchor_noise_test(args.instance_idx)
+    else:
+        tester.run_anchor_noise_test_on_dataset()
 
 
 # --- Starting Anchor Robustness Test ---
