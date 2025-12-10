@@ -128,7 +128,20 @@ class MVP(transformers.T5ForConditionalGeneration):
         # 4. get logits by dot product between 1) anchor vector(last_hidden_state) and 2) relevance vectors(passage_embed)
         logits = torch.einsum('bsh,bph->bsp', last_hidden_state, passage_embed)
         logits = logits.view(bsz, self.n_special_tokens, self.n_passages)
-        logits = logits.mean(dim=1)
+        # only view 1: 
+        logits = logits[:, 0:1, :].squeeze(1)
+        # only view 2: 
+        # logits = logits[:, 1:2, :].squeeze(1)
+        # only view 3: 
+        # logits = logits[:, 2:3, :].squeeze(1)
+        # only view 4: 
+        # logits = logits[:, 3:4, :].squeeze(1)
+        # only view 5: 
+        # logits = logits[:, 4:5, :].squeeze(1)
+        # only view 6: 
+        # logits = logits[:, 5:6, :].squeeze(1)
+        # their original mean
+        # logits = logits.mean(dim=1)
 
         loss = 0
         if labels is not None:
