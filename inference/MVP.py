@@ -144,7 +144,7 @@ class MVP(transformers.T5ForConditionalGeneration):
         # weighted average for 4-view model
         beir_avg = [49.530625, 49.65325, 50.54625, 51.144125]
         weights = [x/sum(beir_avg) for x in beir_avg]
-        weight_tensor = torch.tensor(weights)
+        weight_tensor = torch.tensor(weights).to(logits.device)
         repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
         transposed = repeat_weight_tensor.T
         repeat_over_batchsize = transposed.unsqueeze(0).repeat(bsz, 1, 1)
