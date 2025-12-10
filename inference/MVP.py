@@ -129,9 +129,9 @@ class MVP(transformers.T5ForConditionalGeneration):
         logits = torch.einsum('bsh,bph->bsp', last_hidden_state, passage_embed)
         logits = logits.view(bsz, self.n_special_tokens, self.n_passages)
         # only view 1: 
-        logits = logits[:, 0:1, :].squeeze(1)
+        # logits = logits[:, 0:1, :].squeeze(1)
         # only view 2: 
-        # logits = logits[:, 1:2, :].squeeze(1)
+        logits = logits[:, 1:2, :].squeeze(1)
         # only view 3: 
         # logits = logits[:, 2:3, :].squeeze(1)
         # only view 4: 
