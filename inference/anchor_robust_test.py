@@ -1,9 +1,11 @@
+from enum import Enum
 import torch
 import argparse
 import random
 import string
 import numpy as np
 from evaluation import MVPEvaluator
+from beir_eval import run_direct_rerank_eval
 
 # My idea behind this test:
 # Usually, a reranker model looks at the group pointwise, implying it looks at passage A in isolation
@@ -72,7 +74,35 @@ from evaluation import MVPEvaluator
 # That way you can prove the noise does affect the noise, so we can see if its sensitive.
 
 # a proposed fix if the hypothesis is true, is to build the anchor vector only with the relevant documents by first doing pointwise
-# 
+
+
+def center_padded_print(
+    text: str = "",
+    max_width: int = 80,
+    pad_token: str = "=",
+    add_newline: bool = True,
+):
+    text_width = len(text)
+    if text_width > 0:
+        text = f" {text} "
+        text_width += 2
+
+    pad_width = max(0, max_width - text_width)
+    pad_left = pad_width // 2
+    pad_right = pad_width - pad_left
+
+    text = f"{pad_token * pad_left}{text}{pad_token * pad_right}"
+    if add_newline:
+        text = f"\n{text}"
+
+    print(text)
+
+
+class NoisePassages(Enum):
+    NONE = "none"
+    JUNK = "junk"
+    RANDOM = "random"
+
 
 class RobustnessTester(MVPEvaluator):
     def generate_junk_context(self, count=90, length=50):
@@ -82,6 +112,20 @@ class RobustnessTester(MVPEvaluator):
             noise = ''.join(random.choices(chars, k=length))
             junk_list.append(noise)
         return junk_list
+    
+    def generate_junk_passage_results(self, count, length=50):
+        noise_txts = self.generate_junk_context(count, length)
+        junk = []
+        base_pid = 1_000_000_000
+        for idx, noise_txt in enumerate(noise_txts):
+            passage_result = {
+                "text": noise_txt,
+                "title": "",
+                "bm25_score": 0,
+                "pid": base_pid + idx
+            }
+            junk.append(passage_result)
+        return junk
 
     # Steals passages from OTHER queries in the dataset, to get real noise rather than junk
     def get_random_distractors(self, current_idx, count=90):
@@ -108,39 +152,133 @@ class RobustnessTester(MVPEvaluator):
             distractors.add(text)
             
         return list(distractors)
+    
+    def get_random_distractor_passage_results(self, current_idx, count):
+        total_instances = len(self.test_file)
+        if total_instances <= 1:
+            raise NotImplementedError()
+
+        passages_per_instance = self.args.topk
+
+        if (total_instances - 1) * passages_per_instance < count:
+            raise NotImplementedError()
+
+        # Create a possible passage locations as tuples (instance index, passage index)
+        # while skipping the current instance index
+        random_passage_results_loc = [
+            (instance_idx, passage_result_idx) 
+            for instance_idx in range(total_instances) for passage_result_idx in range(passages_per_instance)
+            if instance_idx != current_idx
+        ]
+
+        # Select n = `count` unique random tuples 
+        selected_passage_results_loc = random.sample(random_passage_results_loc, count)
+        # Retrieve the random passages from the tuples
+        passage_results = [
+            self.test_file[instance_idx][self.args.firststage_result_key][passage_result_idx]
+            for instance_idx, passage_result_idx in selected_passage_results_loc
+        ]
+
+        return passage_results
+
 
     # Code based upon generate_ranklist() in MVP
     def get_ranking_scores(self, question, candidates):
         full_input_texts = self.make_listwise_text(question, candidates)
         input_tensors = self.make_input_tensors(full_input_texts)
         
+        input_ids = input_tensors["input_ids"]
+        attention_mask = input_tensors["attention_mask"]
+
         with torch.no_grad():
-            outputs = self.model(**input_tensors)
-
-        # Get the raw scores
-        all_scores = outputs.logits.flatten().cpu().numpy()
-
-        # get the ranked raw scores
-        ranked_indices = np.argsort(-all_scores)
+            outputs = self.model.forward(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_length=self.args.max_gen_length,
+                return_dict=False,
+            )
+            if outputs.logits.dim() == 3:
+                logits = outputs.logits.squeeze(1).to(input_ids.device)
+            else:
+                logits = outputs.logits.to(input_ids.device)
+            
+            topk_logits = logits.topk(logits.size(-1), dim=1)
+            topk_indices = topk_logits.indices.tolist()
         
-        return ranked_indices, all_scores
+        topk_logits = topk_logits.values.tolist()
+
+        return topk_indices, topk_logits
+    
+    def rerank_instance_evaluation(self, instance, ranked_indices, passages: list[dict]):
+        reranked_items = []
+        for i, passage_idx in enumerate(ranked_indices):
+            passage_idx = int(passage_idx)
+            template  = passages[passage_idx]
+            template['orig_'+self.args.score_key] = template[self.args.score_key]
+            template[self.args.score_key] = 100000 - i                
+            reranked_items.append(template)
+        
+        instance[self.args.firststage_result_key] = reranked_items
+        data = [instance]
+        ndcg_k, scores = run_direct_rerank_eval(data, k=self.args.retrieve_k, combined=True)
+        return ndcg_k, scores
+    
+    def rerank_dataset_evaluation(
+        self,
+        dataset_ranked_indices: list[list],
+        dataset_passages: list[list[dict]]
+    ):
+        reranked_instances = []
+        for instance, ranked_indices, passages in zip(
+            self.test_file, dataset_ranked_indices, dataset_passages
+        ):
+            reranked_items = []
+            for i, passage_idx in enumerate(ranked_indices):
+                passage_idx = int(passage_idx) - 1
+                template  = passages[passage_idx]
+                template['orig_'+self.args.score_key] = template[self.args.score_key]
+                template[self.args.score_key] = 100000 - i                
+                reranked_items.append(template)
+            
+            instance[self.args.firststage_result_key] = reranked_items
+            reranked_instances.append(instance)
+
+        ndcg_k, scores = run_direct_rerank_eval(reranked_instances, k=self.args.retrieve_k, combined=True)
+        return ndcg_k, scores
 
     def run_anchor_noise_test(self):
-        print(f"--- Starting Anchor Robustness Test ---")
-        print(f"Mode: {'Random Junk Noise' if self.args.use_junk else 'Real Distractor Noise'}")
+        center_padded_print("Starting Anchor Robustness Test", pad_token="-")
+
+        noise_type = NoisePassages(self.args.noise)
+        match noise_type:
+            case NoisePassages.NONE:
+                noise_mode = f"No noise. Rerank retrieved {self.args.retrieve_k}"
+            case NoisePassages.JUNK:
+                noise_mode = "Random Junk Noise"
+            case NoisePassages.RANDOM:
+                noise_mode = "Real Distractor Noise"
+            case _:
+                raise ValueError("Unknown noise type")
+        print(f"Mode: {noise_mode} ({noise_type})")
         
         # We test on the first query (Index 0) of our test file
         TARGET_IDX = 0
         instance = self.test_file[TARGET_IDX]
         question = instance[self.args.question_text_key]
         bm25_results = instance[self.args.firststage_result_key]
+        qrels = instance["qrels"]
         
         # Format ALL original candidates
-        original_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}" for x in bm25_results]
+        original_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in bm25_results]
+        original_pid = [x["pid"] for x in bm25_results]
         
         # First we get the ranking of the top 100 bm25, as if we run normal inference
         print(f"\nPhase 1: Running Reference Inference on all {len(original_txt)} candidates...")
-        ranked_indices, original_scores = self.get_ranking_scores(question, original_txt)
+        ranked_indices, ranked_scores = self.get_ranking_scores(question, original_txt)
+        ranked_indices = ranked_indices[0]
+        ranked_scores = ranked_scores[0]
+        ranked_pid = np.array(original_pid)[ranked_indices]
+        ranked_qrels = [qrels.get(pid, 0) for pid in ranked_pid]
         
         # Now we get the top K favorites of this original inference, for example the top 10 ranked documents
         k = self.args.retrieve_k
@@ -149,36 +287,50 @@ class RobustnessTester(MVPEvaluator):
         print(f"Model's Top {k} Favorites (Indices): {top_k_indices}")
         
         # Get the text of the top k
-        top_passages = [original_txt[i] for i in top_k_indices]
-        top_scores_ref = [original_scores[i] for i in top_k_indices]
+        # top_passages = [original_txt[i] for i in top_k_indices]
+        top_passage_results = [bm25_results[i] for i in top_k_indices]
+
+        top_scores_ref = ranked_scores[:k]
 
         # TEST (THE ACTUAL ROBUSTNESS TEST!)
         # We always rank a total of 100 docs, so we get the noise of what we still need
         noise_count = 100 - k
         if noise_count < 0: noise_count = 0
-        
-        if self.args.use_junk:
-            print(f"Generating {noise_count} random junk strings...")
-            noise_txt = self.generate_junk_context(count=noise_count)
-        else:
-            print(f"Gathering {noise_count} irrelevant passages from other queries...")
-            noise_txt = self.get_random_distractors(TARGET_IDX, count=noise_count)
+
+        match noise_type:
+            case NoisePassages.NONE:
+                noise_passage_results = []
+            case NoisePassages.JUNK:
+                print(f"Generating {noise_count} random junk strings...")
+                noise_passage_results = self.generate_junk_passage_results(count=noise_count)
+            case NoisePassages.RANDOM:
+                print(f"Gathering {noise_count} irrelevant passages from other queries...")
+                noise_passage_results = self.get_random_distractor_passage_results(TARGET_IDX, count=noise_count)
+            case _:
+                raise ValueError("Unknown noise type")
             
         # Create the list of query-passages to do inference on, which has the top k be the top-k we found and the rest noise
         # Placing them at the top should be no issue, since the paper claims non-positional bias in the model
-        test_list = top_passages + noise_txt
-        
+        noisy_bm25_results = top_passage_results + noise_passage_results
+
+        noisy_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in noisy_bm25_results]
+        noisy_pid = [x["pid"] for x in noisy_bm25_results]
+
         print(f"Running Stress Inference on [{k} Top passagas + {noise_count} Noise]...")
-        stress_indices, stress_scores = self.get_ranking_scores(question, test_list)
+        ranked_stress_indices, ranked_stress_scores = self.get_ranking_scores(question, noisy_txt)
+        ranked_stress_indices = ranked_stress_indices[0]
+        ranked_stress_scores = ranked_stress_scores[0]
+        ranked_stress_pid = np.array(noisy_pid)[ranked_stress_indices]
+        ranked_stress_qrels = [qrels.get(pid, 0) for pid in ranked_stress_pid]
 
         # We get the top 10, from this noisey test
-        top_scores_stress_test = stress_scores[:k]
+        top_scores_stress_test = ranked_stress_scores[:k]
         
         # The idea here is, that we put our top k at the top of the inference list, implying that it still should be there
         # After the ranking
-        top_k_stress_test_order = stress_indices[:k]
+        top_k_stress_test_order = ranked_stress_indices[:k]
         
-        print(f"\n--- RESULTS ---")
+        center_padded_print("RESULTS", pad_token="-")
         print(f"Query: {question}")
         print(f"Reference Order: {list(range(k))}")
         print(f"Noisey Test Order:    {top_k_stress_test_order}")
@@ -192,21 +344,31 @@ class RobustnessTester(MVPEvaluator):
             
             for rank, idx in enumerate(top_k_stress_test_order):
                 if rank != idx:
-                    print(f"  -> Rank #{rank+1} was TOP #{rank}, but is now TOP #{idx}")
+                    print(f"  -> Rank #{rank+1} was TOP #{rank} (qrel {ranked_qrels[rank]}), but is now TOP #{idx} (qrel {ranked_stress_qrels[idx]})")
         
 
         survivor_count = sum(1 for idx in top_k_stress_test_order if idx < k)
-        print(f"\n--- SURVIVAL RATE ---")
+        center_padded_print("SURVIVAL RATE", pad_token="-")
+
         print(f"Survivors in Top {k}: {survivor_count}/{k}")
         if survivor_count < k:
             print(f"CRITICAL FAIL: {k - survivor_count} relevant documents were pushed out of the Top {k} by the noise!")
         else:
             print(f"PASS: All original VIPs remained in the Top {k} (even if shuffled).")
 
-        print(f"\n--- SCORE DRIFT (Candidate #1) ---")
+        center_padded_print("SCORE DRIFT (Candidate #1)", pad_token="-")
         print(f"Original Score: {top_scores_ref[0]:.4f}")
         print(f"Noisey Score: {top_scores_stress_test[0]:.4f}")
         print(f"Delta: {abs(top_scores_ref[0] - top_scores_stress_test[0]):.4f}")
+
+        center_padded_print("PERFORMANCE", pad_token="-")
+        print("Original ranking")
+        ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_indices, bm25_results)
+        print("Ranking with added noise")
+        ndcg_k_, scores_ = self.rerank_instance_evaluation(instance, ranked_stress_indices, noisy_bm25_results)
+
+
+        # ndcg_k, scores = self.rerank_dataset_evaluation([ranked_indices], [bm25_results])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -219,11 +381,18 @@ if __name__ == "__main__":
     parser.add_argument('--max_gen_length', default=10, type=int)
     parser.add_argument('--measure_flops', action='store_true')
 
-    parser.add_argument('--use_junk', action='store_true')
+    parser.add_argument(
+        '--noise',
+        type=str,
+        choices=[noise.value for noise in NoisePassages],
+        default=NoisePassages.NONE,
+        help="The type of noisy passages that is added to the top k ranking of the first reranking"
+    )
     parser.add_argument('--retrieve_k', default=10, type=int, help="Number of Top Candidates to evaluate this robustness test with")
     
     parser.add_argument('--question_text_key', default='q_text')
     parser.add_argument('--firststage_result_key', default='bm25_results')
+    parser.add_argument('--score_key', default='bm25_score', type=str)
     parser.add_argument('--title_key', default='title')
     parser.add_argument('--text_key', default='text')
 
