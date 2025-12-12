@@ -1,0 +1,57 @@
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+Run ID: dl19_random_k30
+Start time: 2025-12-11 17:20:05
+Parameters:
+  data: dl19
+  noise: random
+  retrieve_k: 30
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+
+2025-12-11 17:20:07.543645: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-12-11 17:20:07.543680: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-12-11 17:20:07.545041: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-12-11 17:20:08.392143: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+[2025-12-11 17:20:10,028] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+/home/rick/miniconda3/envs/mvp/lib/python3.10/site-packages/huggingface_hub/file_download.py:1142: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+Input path: ./eval_data/dl19.jsonl
+Loading model..
+Loading fid model from Jun421/MVP-base
+Done! took 3.054208993911743 second
+
+--------------- Starting Anchor Robustness Test on full dataset ----------------
+Mode: Real Distractor Noise (NoisePassages.RANDOM)
+  0%|          | 0/43 [00:00<?, ?it/s]  2%|▏         | 1/43 [00:03<02:12,  3.17s/it]  5%|▍         | 2/43 [00:05<01:57,  2.88s/it]  7%|▋         | 3/43 [00:08<01:51,  2.79s/it]  9%|▉         | 4/43 [00:11<01:47,  2.76s/it] 12%|█▏        | 5/43 [00:13<01:43,  2.72s/it] 14%|█▍        | 6/43 [00:16<01:40,  2.71s/it] 16%|█▋        | 7/43 [00:19<01:37,  2.70s/it] 19%|█▊        | 8/43 [00:22<01:35,  2.73s/it] 21%|██        | 9/43 [00:24<01:32,  2.72s/it] 23%|██▎       | 10/43 [00:27<01:30,  2.75s/it] 26%|██▌       | 11/43 [00:30<01:28,  2.77s/it] 28%|██▊       | 12/43 [00:33<01:25,  2.75s/it] 30%|███       | 13/43 [00:35<01:21,  2.72s/it] 33%|███▎      | 14/43 [00:38<01:18,  2.71s/it] 35%|███▍      | 15/43 [00:41<01:16,  2.72s/it] 37%|███▋      | 16/43 [00:43<01:13,  2.72s/it] 40%|███▉      | 17/43 [00:46<01:10,  2.72s/it] 42%|████▏     | 18/43 [00:49<01:07,  2.71s/it] 44%|████▍     | 19/43 [00:52<01:05,  2.71s/it] 47%|████▋     | 20/43 [00:54<01:02,  2.70s/it] 49%|████▉     | 21/43 [00:57<00:58,  2.68s/it] 51%|█████     | 22/43 [00:59<00:56,  2.68s/it] 53%|█████▎    | 23/43 [01:02<00:53,  2.68s/it] 56%|█████▌    | 24/43 [01:05<00:50,  2.68s/it] 58%|█████▊    | 25/43 [01:08<00:48,  2.68s/it] 60%|██████    | 26/43 [01:10<00:45,  2.67s/it] 63%|██████▎   | 27/43 [01:13<00:42,  2.68s/it] 65%|██████▌   | 28/43 [01:16<00:40,  2.67s/it] 67%|██████▋   | 29/43 [01:18<00:37,  2.68s/it] 70%|██████▉   | 30/43 [01:21<00:35,  2.71s/it] 72%|███████▏  | 31/43 [01:24<00:32,  2.69s/it] 74%|███████▍  | 32/43 [01:26<00:29,  2.71s/it] 77%|███████▋  | 33/43 [01:29<00:27,  2.71s/it] 79%|███████▉  | 34/43 [01:32<00:24,  2.71s/it] 81%|████████▏ | 35/43 [01:35<00:21,  2.72s/it] 84%|████████▎ | 36/43 [01:37<00:19,  2.72s/it] 86%|████████▌ | 37/43 [01:40<00:16,  2.72s/it] 88%|████████▊ | 38/43 [01:43<00:13,  2.71s/it] 91%|█████████ | 39/43 [01:45<00:10,  2.69s/it] 93%|█████████▎| 40/43 [01:48<00:08,  2.69s/it] 95%|█████████▌| 41/43 [01:51<00:05,  2.77s/it] 98%|█████████▊| 42/43 [01:54<00:02,  2.82s/it]100%|██████████| 43/43 [01:57<00:00,  2.84s/it]100%|██████████| 43/43 [01:57<00:00,  2.73s/it]
+
+--------------------------------- PERFORMANCE ----------------------------------
+Original ranking
+====================================
+Evaluation results :
+
+Accuarcy@1/5/10/20: 0.97674, 1.0, 1.0, 1.0
+NDCG@1/5/10/20: 0.83333, 0.77284, 0.74302, 0.70253
+MRR@1/5/10/20: 0.97674, 0.9845, 0.9845, 0.9845
+Recall@1/5/10/20: 0.02555, 0.11031, 0.17555, 0.28192
+Precision@1/5/10/20: 0.97674, 0.90698, 0.83023, 0.73023
+MAP@1/5/10/20: 0.02555, 0.10884, 0.16853, 0.25784
+NDCG@10: 
+0.74302
+====================================
+Ranking with added noise
+====================================
+Evaluation results :
+
+Accuarcy@1/5/10/20: 0.88372, 1.0, 1.0, 1.0
+NDCG@1/5/10/20: 0.63953, 0.56004, 0.52088, 0.49771
+MRR@1/5/10/20: 0.88372, 0.93101, 0.93101, 0.93101
+Recall@1/5/10/20: 0.02336, 0.07761, 0.12628, 0.19893
+Precision@1/5/10/20: 0.81395, 0.66047, 0.57674, 0.51512
+MAP@1/5/10/20: 0.02336, 0.06337, 0.09685, 0.14148
+NDCG@10: 
+0.52088
+====================================
+
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+End time: 2025-12-11 17:22:12
+Exit code: 0
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶

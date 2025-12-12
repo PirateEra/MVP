@@ -1,0 +1,57 @@
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+Run ID: dl19_junk_k1
+Start time: 2025-12-11 16:52:15
+Parameters:
+  data: dl19
+  noise: junk
+  retrieve_k: 1
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+
+2025-12-11 16:52:17.277892: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-12-11 16:52:17.277935: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-12-11 16:52:17.279277: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-12-11 16:52:18.117399: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+[2025-12-11 16:52:19,730] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+/home/rick/miniconda3/envs/mvp/lib/python3.10/site-packages/huggingface_hub/file_download.py:1142: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+Input path: ./eval_data/dl19.jsonl
+Loading model..
+Loading fid model from Jun421/MVP-base
+Done! took 3.01357364654541 second
+
+--------------- Starting Anchor Robustness Test on full dataset ----------------
+Mode: Random Junk Noise (NoisePassages.JUNK)
+  0%|          | 0/43 [00:00<?, ?it/s]  2%|▏         | 1/43 [00:02<02:00,  2.87s/it]  5%|▍         | 2/43 [00:05<01:48,  2.64s/it]  7%|▋         | 3/43 [00:07<01:42,  2.56s/it]  9%|▉         | 4/43 [00:10<01:38,  2.53s/it] 12%|█▏        | 5/43 [00:12<01:35,  2.51s/it] 14%|█▍        | 6/43 [00:15<01:32,  2.50s/it] 16%|█▋        | 7/43 [00:17<01:29,  2.49s/it] 19%|█▊        | 8/43 [00:20<01:27,  2.49s/it] 21%|██        | 9/43 [00:22<01:27,  2.56s/it] 23%|██▎       | 10/43 [00:25<01:25,  2.58s/it] 26%|██▌       | 11/43 [00:28<01:21,  2.55s/it] 28%|██▊       | 12/43 [00:30<01:20,  2.59s/it] 30%|███       | 13/43 [00:33<01:17,  2.58s/it] 33%|███▎      | 14/43 [00:35<01:15,  2.60s/it] 35%|███▍      | 15/43 [00:38<01:12,  2.60s/it] 37%|███▋      | 16/43 [00:41<01:09,  2.57s/it] 40%|███▉      | 17/43 [00:43<01:07,  2.58s/it] 42%|████▏     | 18/43 [00:46<01:05,  2.60s/it] 44%|████▍     | 19/43 [00:48<01:02,  2.59s/it] 47%|████▋     | 20/43 [00:51<00:59,  2.58s/it] 49%|████▉     | 21/43 [00:53<00:56,  2.55s/it] 51%|█████     | 22/43 [00:56<00:55,  2.64s/it] 53%|█████▎    | 23/43 [00:59<00:52,  2.65s/it] 56%|█████▌    | 24/43 [01:02<00:50,  2.64s/it] 58%|█████▊    | 25/43 [01:04<00:47,  2.66s/it] 60%|██████    | 26/43 [01:07<00:45,  2.65s/it] 63%|██████▎   | 27/43 [01:09<00:41,  2.62s/it] 65%|██████▌   | 28/43 [01:12<00:38,  2.58s/it] 67%|██████▋   | 29/43 [01:14<00:35,  2.56s/it] 70%|██████▉   | 30/43 [01:17<00:33,  2.54s/it] 72%|███████▏  | 31/43 [01:19<00:30,  2.53s/it] 74%|███████▍  | 32/43 [01:22<00:27,  2.51s/it] 77%|███████▋  | 33/43 [01:24<00:25,  2.51s/it] 79%|███████▉  | 34/43 [01:27<00:22,  2.51s/it] 81%|████████▏ | 35/43 [01:29<00:20,  2.50s/it] 84%|████████▎ | 36/43 [01:32<00:17,  2.50s/it] 86%|████████▌ | 37/43 [01:34<00:15,  2.51s/it] 88%|████████▊ | 38/43 [01:37<00:12,  2.51s/it] 91%|█████████ | 39/43 [01:39<00:10,  2.54s/it] 93%|█████████▎| 40/43 [01:42<00:07,  2.61s/it] 95%|█████████▌| 41/43 [01:45<00:05,  2.70s/it] 98%|█████████▊| 42/43 [01:48<00:02,  2.68s/it]100%|██████████| 43/43 [01:51<00:00,  2.70s/it]100%|██████████| 43/43 [01:51<00:00,  2.58s/it]
+
+--------------------------------- PERFORMANCE ----------------------------------
+Original ranking
+====================================
+Evaluation results :
+
+Accuarcy@1: 0.97674
+NDCG@1: 0.83333
+MRR@1: 0.97674
+Recall@1: 0.02555
+Precision@1: 0.97674
+MAP@1: 0.02555
+NDCG@1: 
+0.83333
+====================================
+Ranking with added noise
+====================================
+Evaluation results :
+
+Accuarcy@1: 0.97674
+NDCG@1: 0.83333
+MRR@1: 0.97674
+Recall@1: 0.02555
+Precision@1: 0.97674
+MAP@1: 0.02555
+NDCG@1: 
+0.83333
+====================================
+
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+End time: 2025-12-11 16:54:15
+Exit code: 0
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
