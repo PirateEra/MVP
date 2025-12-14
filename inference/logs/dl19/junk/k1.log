@@ -1,27 +1,27 @@
 ⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
 Run ID: dl19_junk_k1
-Start time: 2025-12-11 16:52:15
+Start time: 2025-12-13 03:32:19
 Parameters:
   data: dl19
   noise: junk
   retrieve_k: 1
 ⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
 
-2025-12-11 16:52:17.277892: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-2025-12-11 16:52:17.277935: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-2025-12-11 16:52:17.279277: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-2025-12-11 16:52:18.117399: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-[2025-12-11 16:52:19,730] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+2025-12-13 03:32:21.933948: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-12-13 03:32:21.933987: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-12-13 03:32:21.935440: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-12-13 03:32:22.823030: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+[2025-12-13 03:32:24,522] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
 /home/rick/miniconda3/envs/mvp/lib/python3.10/site-packages/huggingface_hub/file_download.py:1142: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
   warnings.warn(
 Input path: ./eval_data/dl19.jsonl
 Loading model..
 Loading fid model from Jun421/MVP-base
-Done! took 3.01357364654541 second
+Done! took 3.250746488571167 second
 
 --------------- Starting Anchor Robustness Test on full dataset ----------------
 Mode: Random Junk Noise (NoisePassages.JUNK)
-  0%|          | 0/43 [00:00<?, ?it/s]  2%|▏         | 1/43 [00:02<02:00,  2.87s/it]  5%|▍         | 2/43 [00:05<01:48,  2.64s/it]  7%|▋         | 3/43 [00:07<01:42,  2.56s/it]  9%|▉         | 4/43 [00:10<01:38,  2.53s/it] 12%|█▏        | 5/43 [00:12<01:35,  2.51s/it] 14%|█▍        | 6/43 [00:15<01:32,  2.50s/it] 16%|█▋        | 7/43 [00:17<01:29,  2.49s/it] 19%|█▊        | 8/43 [00:20<01:27,  2.49s/it] 21%|██        | 9/43 [00:22<01:27,  2.56s/it] 23%|██▎       | 10/43 [00:25<01:25,  2.58s/it] 26%|██▌       | 11/43 [00:28<01:21,  2.55s/it] 28%|██▊       | 12/43 [00:30<01:20,  2.59s/it] 30%|███       | 13/43 [00:33<01:17,  2.58s/it] 33%|███▎      | 14/43 [00:35<01:15,  2.60s/it] 35%|███▍      | 15/43 [00:38<01:12,  2.60s/it] 37%|███▋      | 16/43 [00:41<01:09,  2.57s/it] 40%|███▉      | 17/43 [00:43<01:07,  2.58s/it] 42%|████▏     | 18/43 [00:46<01:05,  2.60s/it] 44%|████▍     | 19/43 [00:48<01:02,  2.59s/it] 47%|████▋     | 20/43 [00:51<00:59,  2.58s/it] 49%|████▉     | 21/43 [00:53<00:56,  2.55s/it] 51%|█████     | 22/43 [00:56<00:55,  2.64s/it] 53%|█████▎    | 23/43 [00:59<00:52,  2.65s/it] 56%|█████▌    | 24/43 [01:02<00:50,  2.64s/it] 58%|█████▊    | 25/43 [01:04<00:47,  2.66s/it] 60%|██████    | 26/43 [01:07<00:45,  2.65s/it] 63%|██████▎   | 27/43 [01:09<00:41,  2.62s/it] 65%|██████▌   | 28/43 [01:12<00:38,  2.58s/it] 67%|██████▋   | 29/43 [01:14<00:35,  2.56s/it] 70%|██████▉   | 30/43 [01:17<00:33,  2.54s/it] 72%|███████▏  | 31/43 [01:19<00:30,  2.53s/it] 74%|███████▍  | 32/43 [01:22<00:27,  2.51s/it] 77%|███████▋  | 33/43 [01:24<00:25,  2.51s/it] 79%|███████▉  | 34/43 [01:27<00:22,  2.51s/it] 81%|████████▏ | 35/43 [01:29<00:20,  2.50s/it] 84%|████████▎ | 36/43 [01:32<00:17,  2.50s/it] 86%|████████▌ | 37/43 [01:34<00:15,  2.51s/it] 88%|████████▊ | 38/43 [01:37<00:12,  2.51s/it] 91%|█████████ | 39/43 [01:39<00:10,  2.54s/it] 93%|█████████▎| 40/43 [01:42<00:07,  2.61s/it] 95%|█████████▌| 41/43 [01:45<00:05,  2.70s/it] 98%|█████████▊| 42/43 [01:48<00:02,  2.68s/it]100%|██████████| 43/43 [01:51<00:00,  2.70s/it]100%|██████████| 43/43 [01:51<00:00,  2.58s/it]
+  0%|          | 0/43 [00:00<?, ?it/s]  2%|▏         | 1/43 [00:03<02:21,  3.38s/it]  5%|▍         | 2/43 [00:06<02:08,  3.14s/it]  7%|▋         | 3/43 [00:09<02:03,  3.08s/it]  9%|▉         | 4/43 [00:12<02:00,  3.08s/it] 12%|█▏        | 5/43 [00:15<01:56,  3.06s/it] 14%|█▍        | 6/43 [00:18<01:51,  3.02s/it] 16%|█▋        | 7/43 [00:21<01:47,  3.00s/it] 19%|█▊        | 8/43 [00:24<01:44,  2.98s/it] 21%|██        | 9/43 [00:27<01:41,  2.98s/it] 23%|██▎       | 10/43 [00:30<01:38,  2.98s/it] 26%|██▌       | 11/43 [00:33<01:34,  2.96s/it] 28%|██▊       | 12/43 [00:36<01:32,  2.98s/it] 30%|███       | 13/43 [00:39<01:28,  2.94s/it] 33%|███▎      | 14/43 [00:41<01:25,  2.94s/it] 35%|███▍      | 15/43 [00:44<01:22,  2.93s/it] 37%|███▋      | 16/43 [00:47<01:19,  2.94s/it] 40%|███▉      | 17/43 [00:50<01:16,  2.95s/it] 42%|████▏     | 18/43 [00:53<01:14,  2.96s/it] 44%|████▍     | 19/43 [00:56<01:10,  2.95s/it] 47%|████▋     | 20/43 [00:59<01:07,  2.95s/it] 49%|████▉     | 21/43 [01:02<01:05,  2.96s/it] 51%|█████     | 22/43 [01:05<01:01,  2.94s/it] 53%|█████▎    | 23/43 [01:08<00:58,  2.94s/it] 56%|█████▌    | 24/43 [01:11<00:55,  2.94s/it] 58%|█████▊    | 25/43 [01:14<00:52,  2.94s/it] 60%|██████    | 26/43 [01:17<00:50,  2.96s/it] 63%|██████▎   | 27/43 [01:20<00:47,  2.95s/it] 65%|██████▌   | 28/43 [01:23<00:43,  2.93s/it] 67%|██████▋   | 29/43 [01:26<00:41,  2.94s/it] 70%|██████▉   | 30/43 [01:29<00:38,  2.93s/it] 72%|███████▏  | 31/43 [01:31<00:34,  2.92s/it] 74%|███████▍  | 32/43 [01:34<00:31,  2.88s/it] 77%|███████▋  | 33/43 [01:37<00:29,  2.91s/it] 79%|███████▉  | 34/43 [01:40<00:26,  2.95s/it] 81%|████████▏ | 35/43 [01:43<00:23,  2.96s/it] 84%|████████▎ | 36/43 [01:46<00:20,  2.96s/it] 86%|████████▌ | 37/43 [01:49<00:17,  2.98s/it] 88%|████████▊ | 38/43 [01:52<00:14,  2.97s/it] 91%|█████████ | 39/43 [01:55<00:11,  2.95s/it] 93%|█████████▎| 40/43 [01:58<00:08,  2.95s/it] 95%|█████████▌| 41/43 [02:01<00:05,  2.96s/it] 98%|█████████▊| 42/43 [02:04<00:02,  2.95s/it]100%|██████████| 43/43 [02:07<00:00,  2.94s/it]100%|██████████| 43/43 [02:07<00:00,  2.96s/it]
 
 --------------------------------- PERFORMANCE ----------------------------------
 Original ranking
@@ -52,6 +52,6 @@ NDCG@1:
 ====================================
 
 ⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
-End time: 2025-12-11 16:54:15
+End time: 2025-12-13 03:34:37
 Exit code: 0
 ⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶

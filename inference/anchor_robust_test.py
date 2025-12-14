@@ -1,4 +1,6 @@
 from enum import Enum
+import json
+from pathlib import Path
 import torch
 import argparse
 import random
@@ -7,6 +9,7 @@ import numpy as np
 from evaluation import MVPEvaluator
 from beir_eval import run_direct_rerank_eval
 from tqdm import tqdm
+from scipy.stats import kendalltau, weightedtau, spearmanr
 
 # My idea behind this test:
 # Usually, a reranker model looks at the group pointwise, implying it looks at passage A in isolation
@@ -103,6 +106,7 @@ class NoisePassages(Enum):
     NONE = "none"
     JUNK = "junk"
     RANDOM = "random"
+    WORST1000 = "worst1000"
 
 
 class RobustnessTester(MVPEvaluator):
@@ -181,7 +185,26 @@ class RobustnessTester(MVPEvaluator):
         ]
 
         return passage_results
+    
+    def get_worst_from_top1000_passage_results(self, target_query_id, count, top_1000_dir="top1000"):
+        assert count <= 1000
 
+        if count <= 0:
+            return []
+
+        top100_path = Path(self.args.input_path)
+        top100_name = top100_path.name
+        top1000_path = top100_path.parent / top_1000_dir / top100_name
+
+        with top1000_path.open(mode="r", encoding="utf-8") as file:
+            for line in file:
+                query_passage_instance = json.loads(line)
+                query_id = query_passage_instance["qid"]
+                if target_query_id == query_id:
+                    first_stage_results = query_passage_instance["bm25_results"]
+                    worst_results = first_stage_results[-count:]
+                    return worst_results
+        return None
 
     # Code based upon generate_ranklist() in MVP
     def get_ranking_scores(self, question, candidates):
@@ -259,6 +282,8 @@ class RobustnessTester(MVPEvaluator):
                 noise_mode = "Random Junk Noise"
             case NoisePassages.RANDOM:
                 noise_mode = "Real Distractor Noise"
+            case NoisePassages.WORST1000:
+                noise_mode = "The worst passage from the top1000 first stage ranking"
             case _:
                 raise ValueError("Unknown noise type")
         print(f"Mode: {noise_mode} ({noise_type})")
@@ -266,6 +291,7 @@ class RobustnessTester(MVPEvaluator):
         # We test on the first query (Index 0) of our test file
         TARGET_IDX = instance_idx
         instance = self.test_file[TARGET_IDX]
+        qid = instance["qid"]
         question = instance[self.args.question_text_key]
         bm25_results = instance[self.args.firststage_result_key]
         qrels = instance["qrels"]
@@ -308,6 +334,9 @@ class RobustnessTester(MVPEvaluator):
             case NoisePassages.RANDOM:
                 print(f"Gathering {noise_count} irrelevant passages from other queries...")
                 noise_passage_results = self.get_random_distractor_passage_results(TARGET_IDX, count=noise_count)
+            case NoisePassages.WORST1000:
+                print(f"Gathering {noise_count} worst passages from top1000...")
+                noise_passage_results = self.get_worst_from_top1000_passage_results(qid, count=noise_count)
             case _:
                 raise ValueError("Unknown noise type")
             
@@ -380,6 +409,8 @@ class RobustnessTester(MVPEvaluator):
                 noise_mode = "Random Junk Noise"
             case NoisePassages.RANDOM:
                 noise_mode = "Real Distractor Noise"
+            case NoisePassages.WORST1000:
+                noise_mode = "The worst passage from the top1000 first stage ranking"
             case _:
                 raise ValueError("Unknown noise type")
         print(f"Mode: {noise_mode} ({noise_type})")
@@ -395,6 +426,7 @@ class RobustnessTester(MVPEvaluator):
             bm25_results_list.append(bm25_results)
 
             qrels = instance["qrels"]
+            qid = instance["qid"]
             
             # Format ALL original candidates
             original_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in bm25_results]
@@ -431,6 +463,8 @@ class RobustnessTester(MVPEvaluator):
                     noise_passage_results = self.generate_junk_passage_results(count=noise_count)
                 case NoisePassages.RANDOM:
                     noise_passage_results = self.get_random_distractor_passage_results(instance_idx, count=noise_count)
+                case NoisePassages.WORST1000:
+                    noise_passage_results = self.get_worst_from_top1000_passage_results(qid, count=noise_count)
                 case _:
                     raise ValueError("Unknown noise type")
             
@@ -442,8 +476,11 @@ class RobustnessTester(MVPEvaluator):
             noisy_txt = [f"{x[self.args.title_key]} {x[self.args.text_key]}".strip() for x in noisy_bm25_results]
             noisy_pid = [x["pid"] for x in noisy_bm25_results]
 
+            assert len(noisy_txt) in [k, 100]
+
             ranked_stress_indices, ranked_stress_scores = self.get_ranking_scores(question, noisy_txt)
             ranked_stress_indices = ranked_stress_indices[0]
+
 
             ranked_stress_indices_list.append(ranked_stress_indices)
 

@@ -77,7 +77,7 @@ def setup():
 
 def format_res_for_print(k, acc, ndcg, _map, recall, pre, mrr):
     out = ''
-    k_values = [1,5,10,20,50,100]
+    k_values = [1,2,3,5,10,20,50,100]
     k_values = [x for x in k_values if x <= k]
     
     acc_str = "Accuarcy@" + "/".join([str(x) for x in k_values]) + ": " + ', '.join([str(acc[f"Accuracy@{x}"]) for x in k_values])
@@ -109,7 +109,7 @@ def remove_nan(results):
     return new_res
 
 def do_evaluation(queries, qrels, corpus, results=None, k=10, mode='ours'):
-    k_values = [1,5,10,20,50,100]
+    k_values = [1,2,3,5,10,20,50,100]
     k_values = [x for x in k_values if x <= k]
     retriever = EvaluateRetrieval()
     if mode != 'ours':

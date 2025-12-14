@@ -1,0 +1,57 @@
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+Run ID: trec-covid_none_k1
+Start time: 2025-12-14 00:29:08
+Parameters:
+  data: trec-covid
+  noise: none
+  retrieve_k: 1
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+
+2025-12-14 00:29:10.628909: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-12-14 00:29:10.628951: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-12-14 00:29:10.630418: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-12-14 00:29:11.522221: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+[2025-12-14 00:29:13,308] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+/home/rick/miniconda3/envs/mvp/lib/python3.10/site-packages/huggingface_hub/file_download.py:1142: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+Input path: ./eval_data/trec-covid.jsonl
+Loading model..
+Loading fid model from Jun421/MVP-base
+Done! took 3.47745418548584 second
+
+--------------- Starting Anchor Robustness Test on full dataset ----------------
+Mode: No noise. Rerank retrieved 1 (NoisePassages.NONE)
+  0%|          | 0/50 [00:00<?, ?it/s]  2%|▏         | 1/50 [00:02<01:46,  2.17s/it]  4%|▍         | 2/50 [00:03<01:29,  1.86s/it]  6%|▌         | 3/50 [00:05<01:21,  1.74s/it]  8%|▊         | 4/50 [00:07<01:18,  1.70s/it] 10%|█         | 5/50 [00:08<01:15,  1.68s/it] 12%|█▏        | 6/50 [00:10<01:14,  1.68s/it] 14%|█▍        | 7/50 [00:11<01:10,  1.64s/it] 16%|█▌        | 8/50 [00:13<01:08,  1.62s/it] 18%|█▊        | 9/50 [00:15<01:06,  1.63s/it] 20%|██        | 10/50 [00:16<01:05,  1.64s/it] 22%|██▏       | 11/50 [00:18<01:02,  1.60s/it] 24%|██▍       | 12/50 [00:19<01:01,  1.62s/it] 26%|██▌       | 13/50 [00:21<00:59,  1.60s/it] 28%|██▊       | 14/50 [00:23<00:56,  1.58s/it] 30%|███       | 15/50 [00:24<00:55,  1.60s/it] 32%|███▏      | 16/50 [00:26<00:54,  1.59s/it] 34%|███▍      | 17/50 [00:27<00:52,  1.59s/it] 36%|███▌      | 18/50 [00:29<00:50,  1.58s/it] 38%|███▊      | 19/50 [00:30<00:48,  1.57s/it] 40%|████      | 20/50 [00:32<00:47,  1.57s/it] 42%|████▏     | 21/50 [00:34<00:45,  1.57s/it] 44%|████▍     | 22/50 [00:35<00:43,  1.56s/it] 46%|████▌     | 23/50 [00:37<00:42,  1.58s/it] 48%|████▊     | 24/50 [00:38<00:41,  1.60s/it] 50%|█████     | 25/50 [00:40<00:40,  1.62s/it] 52%|█████▏    | 26/50 [00:42<00:38,  1.61s/it] 54%|█████▍    | 27/50 [00:43<00:36,  1.60s/it] 56%|█████▌    | 28/50 [00:45<00:35,  1.62s/it] 58%|█████▊    | 29/50 [00:47<00:34,  1.62s/it] 60%|██████    | 30/50 [00:48<00:32,  1.62s/it] 62%|██████▏   | 31/50 [00:50<00:30,  1.61s/it] 64%|██████▍   | 32/50 [00:51<00:29,  1.61s/it] 66%|██████▌   | 33/50 [00:53<00:27,  1.61s/it] 68%|██████▊   | 34/50 [00:55<00:25,  1.61s/it] 70%|███████   | 35/50 [00:56<00:24,  1.62s/it] 72%|███████▏  | 36/50 [00:58<00:22,  1.63s/it] 74%|███████▍  | 37/50 [01:00<00:21,  1.64s/it] 76%|███████▌  | 38/50 [01:01<00:19,  1.63s/it] 78%|███████▊  | 39/50 [01:03<00:17,  1.63s/it] 80%|████████  | 40/50 [01:04<00:16,  1.62s/it] 82%|████████▏ | 41/50 [01:06<00:14,  1.61s/it] 84%|████████▍ | 42/50 [01:08<00:12,  1.62s/it] 86%|████████▌ | 43/50 [01:09<00:11,  1.64s/it] 88%|████████▊ | 44/50 [01:11<00:09,  1.64s/it] 90%|█████████ | 45/50 [01:13<00:08,  1.63s/it] 92%|█████████▏| 46/50 [01:14<00:06,  1.62s/it] 94%|█████████▍| 47/50 [01:16<00:04,  1.62s/it] 96%|█████████▌| 48/50 [01:17<00:03,  1.62s/it] 98%|█████████▊| 49/50 [01:19<00:01,  1.61s/it]100%|██████████| 50/50 [01:20<00:00,  1.57s/it]100%|██████████| 50/50 [01:20<00:00,  1.62s/it]
+
+--------------------------------- PERFORMANCE ----------------------------------
+Original ranking
+====================================
+Evaluation results :
+
+Accuarcy@1: 0.9
+NDCG@1: 0.84
+MRR@1: 0.9
+Recall@1: 0.00239
+Precision@1: 0.9
+MAP@1: 0.00239
+NDCG@1: 
+0.84
+====================================
+Ranking with added noise
+====================================
+Evaluation results :
+
+Accuarcy@1: 0.9
+NDCG@1: 0.84
+MRR@1: 0.9
+Recall@1: 0.00239
+Precision@1: 0.9
+MAP@1: 0.00239
+NDCG@1: 
+0.84
+====================================
+
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶
+End time: 2025-12-14 00:30:39
+Exit code: 0
+⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶

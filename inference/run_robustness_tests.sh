@@ -1,15 +1,18 @@
 set -e
 set -u
 
-TEST_DATA=(dl19 dl20 news signal scifact)
 # TEST_DATA=(dl19)
 # TEST_DATA=(dl20)
 # TEST_DATA=(news)
 # TEST_DATA=(signal)
-# TEST_DATA=(scifact)
+# TEST_DATA=(trec-covid)
 
-NOISE_MODE=(none junk random)
-RETRIEVE_Ks=(1 10 20 30 40 50 60 70 80 90 100)
+TEST_DATA=(dl19 dl20 news trec-covid signal)
+NOISE_MODE=(none junk random worst1000)
+
+RETRIEVE_Ks=(1 5 10 20 30 40 50 60 70 80 90 100)
+
+
 
 LOG_DIR="./logs"
 mkdir -p "$LOG_DIR"
