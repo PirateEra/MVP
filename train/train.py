@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 from models.fid_gr_modules import FiDGRModel
+from models.MVP import AggregationStrategy
 
 def set_seed(seed):
     random.seed(seed)
@@ -92,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_train_steps', default=50000,type=int)
     parser.add_argument('--local_weight', default=1.0, type=float)
     parser.add_argument('--local_all', default=False, type=bool)    
+    parser.add_argument("--aggregation_strategy", default=AggregationStrategy.MEAN, type=AggregationStrategy, choices=list(AggregationStrategy))
     # file names
     parser.add_argument("--train-files", default=['./data/train.jsonl'], nargs='+')
     parser.add_argument("--eval-files", default=['./data/validation.jsonl'], nargs='+')

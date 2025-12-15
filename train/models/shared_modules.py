@@ -102,6 +102,7 @@ class SharedModel(pl.LightningModule):
                 softmax_temp=self.args.softmax_temp,
                 n_special_tokens = self.args.n_special_tokens,
                 local_weight=self.args.local_weight,
+                aggregation_strategy=self.args.aggregation_strategy
                 )
         else:
             model = T5ForConditionalGeneration.from_pretrained(model_path, device_map='auto')
@@ -111,6 +112,7 @@ class SharedModel(pl.LightningModule):
                 softmax_temp=self.args.softmax_temp,
                 n_special_tokens = self.args.n_special_tokens,
                 local_weight=self.args.local_weight,
+                aggregation_strategy=self.args.aggregation_strategy
                 )
             fid_model.load_t5(model.state_dict())
             model = fid_model
