@@ -40,8 +40,8 @@ for s in "${seed[@]}"; do
                 --num_train_epochs 1 \
                 --dist_option rank_inverse --softmax_temp $temp \
                 --warmup_steps $warmup \
-                --output_dir ../checkpoints/aggregation/max/ \
-                --aggregation_strategy max \
+                --output_dir ../checkpoints/aggregation/smooth_max/ \
+                --aggregation_strategy smooth_max \
                 --eval_steps 2000
               sleep 5
             done
