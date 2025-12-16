@@ -3,7 +3,7 @@ from tqdm import tqdm
 import jsonlines
 from transformers import T5Tokenizer
 from pathlib import Path
-from MVP import MVP
+from MVP import MVP, AggregationStrategy
 import random
 from beir_eval import run_direct_rerank_eval
 from beir_length_mapping import BEIR_LENGTH_MAPPING
@@ -52,6 +52,7 @@ class MVPEvaluator():
             self.args.model_path,
             n_passages = self.args.topk,
             n_special_tokens=self.args.n_special_tokens,
+            aggregation_strategy=self.args.aggregation_strategy
             ).to('cuda')
         end = time.time()
         
@@ -245,6 +246,7 @@ def main():
     parser.add_argument('--max_input_length', type=int, default=-1) # depends on each individual data setup
     parser.add_argument('--padding', default='max_length', type=str)
     parser.add_argument('--n_special_tokens', default=1, type=int)
+    parser.add_argument("--aggregation_strategy", default=AggregationStrategy.MEAN, type=AggregationStrategy, choices=list(AggregationStrategy))
 
     # position bias setup
     parser.add_argument('--initial', default='origin', type=str)

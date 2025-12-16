@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+from enum import Enum
 import types
 import torch
 import transformers
@@ -13,20 +14,29 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 from transformers.file_utils import ModelOutput
 
+
+class AggregationStrategy(Enum):
+    MEAN = "mean"
+    MAX = "max"
+    SMOOTH_MAX = "smooth_max"
+
+
 @dataclass
 class RankingOutput(ModelOutput):
     loss: Optional[torch.FloatTensor] = None
     logits: Optional[torch.FloatTensor] = None
+    anchors: Optional[torch.FloatTensor] = None
 
 
 class MVP(transformers.T5ForConditionalGeneration):
-    def __init__(self, config, n_passages=5, softmax_temp=0.8, n_special_tokens=4, local_weight=1.0):
+    def __init__(self, config, n_passages=5, softmax_temp=0.8, n_special_tokens=4, local_weight=1.0, aggregation_strategy = AggregationStrategy.MEAN):
         super().__init__(config)
         self.n_passages = n_passages
         self.pad_token_id = config.pad_token_id
         self.softmax_temp = softmax_temp
         self.local_weight = local_weight
         self.n_special_tokens = n_special_tokens
+        self.aggregation_strategy = aggregation_strategy
         self.wrap_encoder(n_special_tokens=self.n_special_tokens)        
         
     # We need to resize as B x (N * L) instead of (B * N) x L here
@@ -122,8 +132,8 @@ class MVP(transformers.T5ForConditionalGeneration):
                 encoder_attention_mask=attention_mask,
                 return_dict=kwargs['return_dict']
             )
-        
-        last_hidden_state = decoder_outputs[0].to(decoder_outputs[0].device)                
+
+        last_hidden_state = decoder_outputs[0].to(decoder_outputs[0].device)
         
         # 4. get logits by dot product between 1) anchor vector(last_hidden_state) and 2) relevance vectors(passage_embed)
         logits = torch.einsum('bsh,bph->bsp', last_hidden_state, passage_embed)
@@ -163,21 +173,31 @@ class MVP(transformers.T5ForConditionalGeneration):
         # logits = torch.sum(weight_multiplication, dim=1)
 
         # their original mean
-        logits = logits.mean(dim=1)
+        
+        match self.aggregation_strategy:
+            case AggregationStrategy.MEAN:
+                logits = logits.mean(dim=1)
+            case AggregationStrategy.MAX:
+                logits = logits.amax(dim=1)
+            case AggregationStrategy.SMOOTH_MAX:
+                logits = torch.logsumexp(logits, dim=1)
+            case _:
+                raise ValueError("Unknown aggregation strategy")
 
         loss = 0
         if labels is not None:
             loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
             if label_dist is not None:
-                logits /= self.softmax_temp
+                logits = logits / self.softmax_temp
                 logits = torch.nn.functional.softmax(logits, dim=-1)
                 list_loss = loss_fct(logits.view(-1, logits.size(-1)), label_dist.view(-1, label_dist.size(-1)))
                 orthogonal_loss = self.orthogonal_loss(last_hidden_state, bsz)
             loss = list_loss + self.local_weight * orthogonal_loss
-            
+        
         return RankingOutput(
             loss=loss,
             logits=logits,
+            anchors=last_hidden_state
         )
     
     def generate_ranklist(self, input_ids=None, attention_mask=None, **kwargs):
