@@ -374,9 +374,8 @@ class RobustnessTester(MVPEvaluator):
             print("\nCONCLUSION: FAIL. Ranking Issues Detected.")
             print("The relative order of the Top K changed when the background noise changed.")
             
-            for rank, idx in enumerate(top_k_stress_test_order):
-                if rank != idx:
-                    print(f"  -> Rank #{rank+1} was TOP #{rank} (qrel {ranked_qrels[rank]}), but is now TOP #{idx} (qrel {ranked_stress_qrels[idx]})")
+        for position,(normal_pid, normal_qrel, stress_pid, stress_qrel) in enumerate(zip(ranked_pid[:k], ranked_qrels[:k], ranked_stress_pid[:k], ranked_stress_qrels[:k])):
+            print(f"  -> Position #{position+1}: Document {normal_pid} (qrel {normal_qrel}), but is now Document {stress_pid} (qrel {stress_qrel})")
         
 
         survivor_count = sum(1 for idx in top_k_stress_test_order if idx < k)
@@ -520,6 +519,7 @@ if __name__ == "__main__":
     )
     parser.add_argument('--retrieve_k', default=10, type=int, help="Number of Top Candidates to evaluate this robustness test with")
     parser.add_argument("--aggregation_strategy", default=AggregationStrategy.MEAN, type=AggregationStrategy, choices=list(AggregationStrategy))
+    parser.add_argument("--single_view_index", type=int)
     
     parser.add_argument('--question_text_key', default='q_text')
     parser.add_argument('--firststage_result_key', default='bm25_results')
