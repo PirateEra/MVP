@@ -1,13 +1,17 @@
-# MVP
+# Revisiting Multi-View-guided Passage Reranking: Reproducibility, Noise Robustness, and View Token Distinctiveness
 
 
-This repository contains the official implementation for our EMNLP 2025 paper:
+The original paper that we aim to reproduce is:
 
 > **Multi-view-guided Passage Reranking with Large Language Models**  
 > Jeongwoo Na*, Jun Kwon*, Eunseong Choi, Jongwuk Lee (* : equal contribution)  
 > *Accepted to EMNLP 2025 Main Conference*
 
-## Overview
+
+In this repository, we layout our reproducibility process and provide clarity on how to run our extension experiments. 
+
+
+## Overview of MVP
 <p align="center">
   <img src="assets/fig_MVP_motivation.png" alt="MVP Motivation" width="50%">
 </p>
@@ -29,14 +33,15 @@ conda activate mvp
 ### Run MVP
 ```
 cd inference
-bash run_evaluation.sh
+bash run_evaluation_copy.sh
 ```
 
 ### Train MVP
 ```
 cd train
-bash train.sh
+bash train_copy.sh
 ```
+To train the 3B MVP model, uncomment the corresponding code in train_copy.sh. To train the MVP model with a different number of view tokens (e.g. for reproducing the ablation study of the original paper), you can vary n_special_tokens() from 1 to 6. 
 
 ## Model Checkpoints
 1. [MVP-base](https://huggingface.co/Jun421/MVP-base) : ```Jun421/MVP-base```
@@ -44,20 +49,20 @@ bash train.sh
 ##  Dataset
 ### Evaluation Datasets
 - [BM25-Top100](https://huggingface.co/datasets/Soyoung97/beir-eval-bm25-top100)```Soyoung97/beir-eval-bm25-top100```
-> **Note**: Our research was conducted using [ListT5](https://github.com/soyoung97/ListT5). The evaluation dataset is also available through that repository.
+> **Note**: The research was conducted using [ListT5](https://github.com/soyoung97/ListT5). The evaluation dataset is also available through that repository.
 
 ### Training Datasets
 - [Train/Valid](https://huggingface.co/datasets/Jun421/MVP-train)```Jun421/MVP-train```
 
 This dataset is derived from BEIR/MSMARCO license, and its usage is restricted to **academic purposes** only.
-> **Note**: Our training dataset is derived from the [Rank-DistiLLM](https://github.com/webis-de/rank-distillm)
- dataset after further processing. The detailed post-processing procedure can be found in our paper.
+> **Note**: The training dataset is derived from the [Rank-DistiLLM](https://github.com/webis-de/rank-distillm)
+ dataset after further processing. The detailed post-processing procedure can be found in the original paper.
 
 ## Acknowledgments
-We implemented our model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
+The original authors implemented their model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
 
 ## Citation
-If you find our work useful for your research, please cite our paper:
+For the citation of the original paper, you can cite the following:
 ```
 @misc{na2025multiviewguidedpassagererankinglarge,
       title={Multi-view-guided Passage Reranking with Large Language Models}, 
