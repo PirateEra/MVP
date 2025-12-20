@@ -41,7 +41,7 @@ bash run_evaluation_copy.sh
 cd train
 bash train_copy.sh
 ```
-To train the 3B MVP model, uncomment the corresponding code in train_copy.sh. To train the MVP model with a different number of view tokens (e.g. for reproducing the ablation study of the original paper), you can vary n_special_tokens() from 1 to 6. 
+To train the 3B MVP model, uncomment the corresponding code in `train_copy.sh`. To train the MVP model with a different number of view tokens (e.g. for reproducing the ablation study of the original paper), you can vary `n_special_tokens()` from 1 to 6. 
 
 ## Model Checkpoints
 1. [MVP-base](https://huggingface.co/Jun421/MVP-base) : ```Jun421/MVP-base```
