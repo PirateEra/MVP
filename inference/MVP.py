@@ -151,29 +151,7 @@ class MVP(transformers.T5ForConditionalGeneration):
         # only view 6: 
         # logits = logits[:, 5:6, :].squeeze(1)
 
-        # weighted average for 4-view model
-        # beir_avg = [49.530625, 49.65325, 50.54625, 51.144125]
-        # weighted average for 6-view model
-        # beir_avg = [48.412375, 49.632625, 49.307125, 49.499625, 50.423875, 50.59425]
-
-        # weights = [x/sum(beir_avg) for x in beir_avg]
-        # weight_tensor = torch.tensor(weights).to(logits.device)
-
-        # test 4-view model
-        # weight_tensor = torch.tensor([0.30, 0.15, 0.15, 0.40]).to(logits.device)
-        # weight_tensor = torch.tensor([0.15, 0.15, 0.30, 0.40]).to(logits.device)
-        # test 6-view model
-        # weight_tensor = torch.tensor([0.25, 0.10, 0.10, 0.10, 0.10, 0.35]).to(logits.device)
-        # weight_tensor = torch.tensor([0.10, 0.10, 0.10, 0.10, 0.25, 0.35]).to(logits.device)
-
-        # repeat_weight_tensor = weight_tensor.repeat(self.n_passages, 1)
-        # transposed = repeat_weight_tensor.T
-        # repeat_over_batchsize = transposed.unsqueeze(0).repeat(bsz, 1, 1)
-        # weight_multiplication = torch.mul(logits, repeat_over_batchsize)
-        # logits = torch.sum(weight_multiplication, dim=1)
-
-        # their original mean
-        
+        # different types of aggregation 
         match self.aggregation_strategy:
             case AggregationStrategy.MEAN:
                 logits = logits.mean(dim=1)
