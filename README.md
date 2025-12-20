@@ -30,11 +30,20 @@ conda activate mvp
 ```
 
 ## How to Use
+### Shuffle or reverse the order of candidate passages in a jsonl file (e.g for reproducing the robustness table)
+```
+python rev_shuffle_data.py --input inference/eval_data/jsonl_input_file --output_rev inference/eval_data/jsonl_output_file_name --output_shuffle inference/eval_data/jsonl_output_file_name
+```
+Here, `--output_rev` reverses the order of the candidate passages for each query in the jsonl file and  `--output_shuffle` shuffles the order of the candidate passages. 
+
+
 ### Run MVP
 ```
 cd inference
 bash run_evaluation_copy.sh
 ```
+
+To evaluate MVP on a subset of datasets (e.g. only DL19 and DL20) or on other datasets (e.g. the shuffled or reversed datasets)datasets, uncomment the `TEST_DATA` lines accordingly. To measure the FLOPs values for the datasets, add the flag `--measure_flops` in the bash file. Finally, to evaluate a differnt model, change `--model_path` to the desired model path. However, do note that you should also change `--n_special_tokens` accordingly when using a different view model (e.g. the models that are trained with a different number of view tokens, varying from 1 to 6 view tokens).
 
 ### Train MVP
 ```
@@ -57,6 +66,12 @@ To train the 3B MVP model, uncomment the corresponding code in `train_copy.sh`. 
 This dataset is derived from BEIR/MSMARCO license, and its usage is restricted to **academic purposes** only.
 > **Note**: The training dataset is derived from the [Rank-DistiLLM](https://github.com/webis-de/rank-distillm)
  dataset after further processing. The detailed post-processing procedure can be found in the original paper.
+
+
+## Extension 
+### Noise experiments
+
+### View Experiments
 
 ## Acknowledgments
 The original authors implemented their model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
