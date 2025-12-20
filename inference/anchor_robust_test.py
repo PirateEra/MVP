@@ -7,6 +7,7 @@ import random
 import string
 import numpy as np
 from evaluation import MVPEvaluator
+from MVP import AggregationStrategy
 from beir_eval import run_direct_rerank_eval
 from tqdm import tqdm
 from scipy.stats import kendalltau, weightedtau, spearmanr
@@ -518,6 +519,7 @@ if __name__ == "__main__":
         help="The type of noisy passages that is added to the top k ranking of the first reranking"
     )
     parser.add_argument('--retrieve_k', default=10, type=int, help="Number of Top Candidates to evaluate this robustness test with")
+    parser.add_argument("--aggregation_strategy", default=AggregationStrategy.MEAN, type=AggregationStrategy, choices=list(AggregationStrategy))
     
     parser.add_argument('--question_text_key', default='q_text')
     parser.add_argument('--firststage_result_key', default='bm25_results')
