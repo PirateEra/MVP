@@ -52,7 +52,8 @@ class MVPEvaluator():
             self.args.model_path,
             n_passages = self.args.topk,
             n_special_tokens=self.args.n_special_tokens,
-            aggregation_strategy=self.args.aggregation_strategy
+            aggregation_strategy=self.args.aggregation_strategy,
+            single_view_index=self.args.single_view_index,
             ).to('cuda')
         end = time.time()
         
@@ -247,6 +248,7 @@ def main():
     parser.add_argument('--padding', default='max_length', type=str)
     parser.add_argument('--n_special_tokens', default=1, type=int)
     parser.add_argument("--aggregation_strategy", default=AggregationStrategy.MEAN, type=AggregationStrategy, choices=list(AggregationStrategy))
+    parser.add_argument("--single_view_index", type=int)
 
     # position bias setup
     parser.add_argument('--initial', default='origin', type=str)

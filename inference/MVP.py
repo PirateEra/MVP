@@ -19,6 +19,7 @@ class AggregationStrategy(Enum):
     MEAN = "mean"
     MAX = "max"
     SMOOTH_MAX = "smooth_max"
+    SINGLE_VIEW = "single_view"
 
 
 @dataclass
@@ -29,7 +30,16 @@ class RankingOutput(ModelOutput):
 
 
 class MVP(transformers.T5ForConditionalGeneration):
-    def __init__(self, config, n_passages=5, softmax_temp=0.8, n_special_tokens=4, local_weight=1.0, aggregation_strategy = AggregationStrategy.MEAN):
+    def __init__(
+        self,
+        config,
+        n_passages=5,
+        softmax_temp=0.8,
+        n_special_tokens=4,
+        local_weight=1.0,
+        aggregation_strategy=AggregationStrategy.MEAN,
+        single_view_index: int | None = None,
+    ):
         super().__init__(config)
         self.n_passages = n_passages
         self.pad_token_id = config.pad_token_id
@@ -37,7 +47,15 @@ class MVP(transformers.T5ForConditionalGeneration):
         self.local_weight = local_weight
         self.n_special_tokens = n_special_tokens
         self.aggregation_strategy = aggregation_strategy
-        self.wrap_encoder(n_special_tokens=self.n_special_tokens)        
+
+        if self.aggregation_strategy == AggregationStrategy.SINGLE_VIEW \
+            and single_view_index is None:
+            raise TypeError("`single_view_index` is `None` but expected `int` since aggregation strategy is `AggregationStrategy.SINGLE_VIEW`")
+        if single_view_index is not None and single_view_index >= n_special_tokens:
+            raise ValueError(f"`single_view_index` was {single_view_index} but there are only {n_special_tokens} views") 
+        self.single_view_index = single_view_index
+
+        self.wrap_encoder(n_special_tokens=self.n_special_tokens)       
         
     # We need to resize as B x (N * L) instead of (B * N) x L here
     # because the T5 forward method uses the input tensors to infer
@@ -159,6 +177,8 @@ class MVP(transformers.T5ForConditionalGeneration):
                 logits = logits.amax(dim=1)
             case AggregationStrategy.SMOOTH_MAX:
                 logits = torch.logsumexp(logits, dim=1)
+            case AggregationStrategy.SINGLE_VIEW:
+                logits = logits[:, self.single_view_index:self.single_view_index + 1, :].squeeze(1)
             case _:
                 raise ValueError("Unknown aggregation strategy")
 

@@ -3,4 +3,5 @@ deprecated/
 instructions/
 outputs/
 *.txt
+!metrics/**/*.txt
 eval_data/
