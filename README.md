@@ -70,6 +70,52 @@ This dataset is derived from BEIR/MSMARCO license, and its usage is restricted t
 
 ## Extension 
 ### Noise experiments
+The results for the noise experiments can be done using the `anchor_robust_test.py`.
+The qualitative experiments done using:
+```bash
+cd inference
+python ./anchor_robust_test.py \
+  --input_path ./eval_data/dl19.json \
+  --topk 100 \
+  --n_special_tokens 4 \
+  --model_path Jun421/MVP-base \
+  --noise random \
+  --retrieve_k 10 \
+  --instance_idx 0
+```
+
+or for reranking the top-k without adding noise:
+```bash
+cd inference
+python ./anchor_robust_test.py \
+  --input_path ./eval_data/dl19.json \
+  --topk 100 \
+  --n_special_tokens 4 \
+  --model_path Jun421/MVP-base \
+  --noise none \
+  --retrieve_k 10 \
+  --instance_idx 0
+```
+
+
+The quantative experiments are run using:
+```bash
+cd inference
+python ./anchor_robust_test.py \
+  --input_path ./eval_data/dl19.json \
+  --topk 100 \
+  --n_special_tokens 4 \
+  --model_path Jun421/MVP-base \
+  --noise none \
+  --retrieve_k 10
+```
+where the arguments `--noise` can be set to one option from `[none, junk, random, worst1000]`and `--retrieve_k` can be set to any integer such as 10 or 100. To reproduce all results from the paper you can run the following script:
+```bash
+cd inference
+./run_robustness_tests.sh
+```
+which will run and save the results to a file which can be viewed in the `analysis_robustness_tests.ipynb` notebook.
+
 
 ### View Experiments
 To produce the results for the different aggregation strategies you can first train the models. With mean aggregations is the default setup and thus same as in [Train MVP](#train-mvp). Max aggregation can be done by running
