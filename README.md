@@ -72,6 +72,38 @@ This dataset is derived from BEIR/MSMARCO license, and its usage is restricted t
 ### Noise experiments
 
 ### View Experiments
+To produce the results for the different aggregation strategies you can first train the models. With mean aggregations is the default setup and thus same as in [Train MVP](#train-mvp). Max aggregation can be done by running
+```bash
+cd train
+./train_max.sh
+```
+
+Evaluation can be done using:
+```bash
+cd inference
+# Inference on all dataset when trained and inference with mean aggrregation
+./run_evaluation_mean.sh
+
+# Inference on all dataset when trained with mean aggrregation and inference on individual views
+./run_evaluation_mean_agg_seperate_views.sh
+
+# Inference on all dataset when trained and inference with max aggrregation
+./run_evaluation_max_agg.sh
+
+# Inference on all dataset when trained with max aggrregation and inference on individual views
+./run_evaluation_max_agg_seperate_views.sh
+```
+Metrics are printed out for each dataset but can also be computed and saved from the stored inference results (results are stored at the `--output_path` in `evaluation.py`. Computing and saving metrics can be done the following:
+```bash
+cd inference
+./compute_and_save_metrics.sh <input directory> <output directory> <file prefix>
+```
+where
+- `input directory`: The directory containing the inference results like `mvp-dl19.jsonl`
+- `output directory`: The directory where the file with metrics are written to
+- `file prefix`: Optional parameter. The script search for the result files in the `input directory` based on dataset name e.g. `dl19`. If files have a prefix such as `mvp-dl19.jsonl`, you want to add `"mvp-"` as file prefix
+
+
 
 ## Acknowledgments
 The original authors implemented their model based on the following repository: [ListT5](https://github.com/soyoung97/ListT5)
