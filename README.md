@@ -68,6 +68,9 @@ This dataset is derived from BEIR/MSMARCO license, and its usage is restricted t
  dataset after further processing. The detailed post-processing procedure can be found in the original paper.
 
 
+## Reproduced plots
+To reproduce figures 4 and 6 from the original paper (FLOPs and view token ablation study), we provide the following notebook: `figure6_and_4_reproduced_plot.ipynb` under the `inference` directory.
+
 ## Extension 
 ### Noise experiments
 The results for the noise experiments can be done using the `anchor_robust_test.py`.
