@@ -45,6 +45,9 @@ bash run_evaluation_copy.sh
 
 To evaluate MVP on a subset of datasets (e.g. only DL19 and DL20) or on other datasets (e.g. the shuffled or reversed datasets)datasets, uncomment the `TEST_DATA` lines accordingly. To measure the FLOPs values for the datasets, add the flag `--measure_flops` in the bash file. Finally, to evaluate a differnt model, change `--model_path` to the desired model path. However, do note that you should also change `--n_special_tokens` accordingly when using a different view model (e.g. the models that are trained with a different number of view tokens, varying from 1 to 6 view tokens).
 
+### Reproduced plots
+To reproduce figures 4 and 6 from the original paper (FLOPs and view token ablation study), we provide the following notebook: `figure6_and_4_reproduced_plot.ipynb` under the `inference` directory.
+
 ### Train MVP
 ```
 cd train
@@ -67,9 +70,6 @@ This dataset is derived from BEIR/MSMARCO license, and its usage is restricted t
 > **Note**: The training dataset is derived from the [Rank-DistiLLM](https://github.com/webis-de/rank-distillm)
  dataset after further processing. The detailed post-processing procedure can be found in the original paper.
 
-
-## Reproduced plots
-To reproduce figures 4 and 6 from the original paper (FLOPs and view token ablation study), we provide the following notebook: `figure6_and_4_reproduced_plot.ipynb` under the `inference` directory.
 
 ## Extension 
 ### Noise experiments
